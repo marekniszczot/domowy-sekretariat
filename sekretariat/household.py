@@ -20,6 +20,12 @@ class Member:
     surname_forms: tuple[str, ...] = ()
     # Any of them may sign in; reminders go to the first one.
     emails: tuple[str, ...] = ()
+    # How the app addresses them ("Babcia Ela"); the first first-name form if empty.
+    display_name: str = ""
+
+    @property
+    def name(self) -> str:
+        return self.display_name or (self.first_name_forms[0] if self.first_name_forms else self.id)
 
     @property
     def has_account(self) -> bool:

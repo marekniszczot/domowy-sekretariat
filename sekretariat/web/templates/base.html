@@ -1,0 +1,36 @@
+{% from "_icons.html" import tab_icon %}
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F4F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12151C" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Sekretariat">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>{% block title %}Domowy Sekretariat{% endblock %}</title>
+<link rel="manifest" href="/static/manifest.webmanifest">
+<link rel="icon" href="/static/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="preload" href="/static/fonts/atkinson-next-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/static/app.css">
+{% block head %}{% endblock %}
+</head>
+<body>
+<main class="page">
+{% block content %}{% endblock %}
+</main>
+{% if tabs %}
+<nav class="tabs" aria-label="Nawigacja">
+  {% for tab in tabs %}
+  <a class="tab" href="{{ tab.href }}"{% if tab.key == active %} aria-current="page"{% endif %}>
+    {% if tab.badge %}<span class="badge" aria-label="{{ tab.badge }} otwartych">{{ tab.badge }}</span>{% endif %}
+    {{ tab_icon(tab.key) }}
+    {{ tab.label }}
+  </a>
+  {% endfor %}
+</nav>
+{% endif %}
+</body>
+</html>

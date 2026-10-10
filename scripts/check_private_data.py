@@ -39,6 +39,8 @@ def forbidden_terms(root: Path) -> tuple[list[str], list[str]]:
         for member in members:
             names.extend(member.first_name_forms)
             names.extend(member.surname_forms)
+            if member.display_name:
+                names.append(member.display_name)
             other.extend(member.emails)
     extra = root / ".forbidden-strings"
     if extra.exists():

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Moje pisma · Domowy Sekretariat{% endblock %}
+{% block content %}
+<h1 class="title">Moje pisma</h1>
+{% if not letters %}
+<p class="lede"><strong>Nic na Ciebie nie czeka.</strong></p>
+<p class="muted">Dostajesz pismo z banku, urzędu albo od dostawcy prądu? Zrób mu zdjęcie, a powiem, o co chodzi i czy musisz coś zrobić.</p>
+{% endif %}
+{% endblock %}

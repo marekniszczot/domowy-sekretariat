@@ -96,8 +96,12 @@ def app_and_calls():
     return app, calls
 
 
-def client(app: FastAPI) -> TestClient:
-    return TestClient(app, follow_redirects=False)
+ORIGIN = "http://testserver"  # TestClient's own origin
+
+
+def client(app: FastAPI, origin: str | None = ORIGIN) -> TestClient:
+    headers = {"Origin": origin} if origin else {}
+    return TestClient(app, follow_redirects=False, headers=headers)
 
 
 def test_sign_in_sets_session_cookie(app_and_calls):
@@ -136,6 +140,32 @@ def test_stranger_is_refused(app_and_calls):
     )
     assert response.status_code == 403
     assert SESSION_COOKIE not in response.headers.get("set-cookie", "")
+    assert "Ten adres nie należy do Waszego domu" in response.text
+
+
+def test_google_may_post_sign_in_from_its_own_origin(app_and_calls):
+    app, _ = app_and_calls
+    http = client(app, origin="https://accounts.google.com")
+    http.cookies.set("g_csrf_token", "c")
+    response = http.post(
+        "/auth/google", data={"credential": google("dom1@example.com"), "g_csrf_token": "c"}
+    )
+    assert response.status_code == 303
+
+
+@pytest.mark.parametrize("origin", [None, "https://evil.example.com", "null"])
+def test_browser_posts_from_other_origins_are_refused(app_and_calls, origin):
+    app, _ = app_and_calls
+    http = client(app, origin=origin)
+    http.cookies.set(SESSION_COOKIE, Sessions("secret").issue(KOORD))
+    assert http.post("/logout").status_code == 403
+
+
+def test_configured_base_url_is_the_expected_origin(app_and_calls):
+    app, _ = app_and_calls
+    app.state.config.base_url = AUDIENCE
+    assert client(app).post("/logout").status_code == 403
+    assert client(app, origin=AUDIENCE).post("/logout").status_code == 303
 
 
 def test_pages_need_a_session_and_logout_clears_it(app_and_calls):
@@ -185,5 +215,23 @@ def test_internal_process_refuses_other_callers(app_and_calls, headers):
 def test_health_and_signed_out_home(app_and_calls):
     app, _ = app_and_calls
     http = client(app)
-    assert http.get("/health").json() == {"ok": True}
-    assert "g_id_signin" in http.get("/").text  # Cloud Run reserves /healthz
+    assert http.get("/health").json() == {"ok": True}  # Cloud Run reserves /healthz
+    page = http.get("/").text
+    assert "g_id_signin" in page and 'data-login_uri="/auth/google"' in page
+
+
+def test_signed_in_home_without_letters_shows_the_empty_state(app_and_calls):
+    app, _ = app_and_calls
+    http = client(app)
+    http.cookies.set(SESSION_COOKIE, Sessions("secret").issue(DOM1))
+    page = http.get("/").text
+    assert "Moje pisma" in page and "Nic na Ciebie nie czeka." in page
+    assert "g_id_signin" not in page
+
+
+def test_static_files_and_manifest_are_served(app_and_calls):
+    app, _ = app_and_calls
+    http = client(app)
+    assert "--ink: #1D2A5C" in http.get("/static/app.css").text
+    assert http.get("/static/manifest.webmanifest").json()["display"] == "standalone"
+    assert http.get("/static/icon-180.png").headers["content-type"] == "image/png"

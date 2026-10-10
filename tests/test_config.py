@@ -49,6 +49,13 @@ def test_parse_keeps_order_and_fields():
     ]
 
 
+def test_display_name_defaults_to_the_first_first_name_form():
+    members = parse_household(
+        VALID.replace("id: zofia\n", "id: zofia\n    display_name: Babcia Zosia\n")
+    )
+    assert [m.name for m in members] == ["Ewa", "Jan", "Babcia Zosia"]
+
+
 @pytest.mark.parametrize(
     "text, problem",
     [

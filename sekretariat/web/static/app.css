@@ -1,0 +1,107 @@
+/* Domowa pieczątka: tokens and components from DESIGN.md. */
+
+@font-face { font-family: "Atkinson Hyperlegible Next"; font-weight: 200 800; font-display: swap;
+  src: url(fonts/atkinson-next-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; font-weight: 200 800; font-display: swap;
+  src: url(fonts/atkinson-next-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Atkinson Hyperlegible Mono"; font-weight: 600; font-display: swap;
+  src: url(fonts/atkinson-mono-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Atkinson Hyperlegible Mono"; font-weight: 600; font-display: swap;
+  src: url(fonts/atkinson-mono-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 600 800; font-display: swap;
+  src: url(fonts/bricolage-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Bricolage Grotesque"; font-weight: 600 800; font-display: swap;
+  src: url(fonts/bricolage-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+:root {
+  --ground: #F4F5F7;
+  --sheet: #FFFFFF;
+  --ink: #1D2A5C;
+  --on-ink: #FFFFFF;
+  --muted: #5B6478;
+  --rule: #DDE0E6;
+  --veil: rgba(29, 42, 92, .08);
+  --highlight: #FFE58A;
+  --ok: #1E6B3A;     --ok-on: #FFFFFF;
+  --todo: #F2B33D;   --todo-on: #2A1A00;  --todo-text: #8A4B00;
+  --unsure: #4A5A72; --unsure-on: #FFFFFF;
+  --urgent: #B3261E; --urgent-on: #FFFFFF;
+  --display: "Bricolage Grotesque", "Atkinson Hyperlegible Next", sans-serif;
+  --body: "Atkinson Hyperlegible Next", sans-serif;
+  --mono: "Atkinson Hyperlegible Mono", ui-monospace, monospace;
+  --r-stamp: 4px; --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground: #12151C; --sheet: #1B1F29; --ink: #E8EAF0; --on-ink: #12151C; --muted: #9AA3B5; --rule: #2C3240;
+    --veil: rgba(232, 234, 240, .06); --highlight: #5A4A12;
+    --ok: #6FD49A; --ok-on: #12151C; --todo: #F5C15A; --todo-on: #12151C; --todo-text: #F5C15A;
+    --unsure: #A9B8CF; --unsure-on: #12151C; --urgent: #FF8A80; --urgent-on: #12151C;
+    color-scheme: dark;
+  }
+}
+
+/* Dynamic Type (DR-14): -apple-system-body only reads the iOS text size; 1rem = that size. */
+html { font-size: 100%; font: -apple-system-body; font-family: var(--body); -webkit-text-size-adjust: 100%; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100dvh; background: var(--ground); color: var(--ink);
+  font-family: var(--body); font-size: 1.0625rem; line-height: 1.5;
+  display: flex; flex-direction: column;
+}
+button, input, select { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+
+.page {
+  flex: 1; width: 100%; max-width: 680px; margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 16px) max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left));
+}
+.title { font-family: var(--display); font-weight: 800; font-size: 2rem; line-height: 1.1; margin: 4px 0 8px; font-variation-settings: "opsz" 96; }
+.lede { margin: 0 0 24px; }
+.muted { color: var(--muted); }
+
+/* Buttons: primary ink, secondary outline, ghost underlined. */
+.btn {
+  display: grid; place-items: center; min-height: 56px; padding: 0 16px; width: 100%;
+  border-radius: var(--r-sm); border: 2px solid var(--ink); font-weight: 700; font-size: 1.0625rem;
+  text-align: center; text-decoration: none; cursor: pointer; background: transparent; color: var(--ink);
+}
+.btn.primary { background: var(--ink); color: var(--on-ink); }
+.btn.primary:active { background: color-mix(in srgb, var(--ink) 92%, #000); }
+.btn.ghost { border-color: transparent; text-decoration: underline; text-underline-offset: 4px; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .45; cursor: default; }
+
+/* Messages: veil, state icon, one sentence (DR-18). */
+.notice { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--r-sm); background: var(--veil); margin: 0 0 16px; }
+.notice .i { font-weight: 800; flex: none; }
+.t-ok { color: var(--ok); } .t-todo { color: var(--todo-text); } .t-unsure { color: var(--unsure); } .t-urgent { color: var(--urgent); }
+
+/* Bottom tab bar (DR-2). */
+.tabs {
+  position: sticky; bottom: 0; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+  background: var(--sheet); border-top: 1px solid var(--rule);
+  padding: 6px max(4px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left));
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 48px;
+  font-size: .8rem; font-weight: 600; color: var(--muted); text-decoration: none; position: relative;
+}
+.tab[aria-current="page"] { color: var(--ink); }
+.tab svg { width: 26px; height: 26px; }
+.badge {
+  position: absolute; top: 0; left: calc(50% + 6px); min-width: 20px; height: 20px; padding: 0 5px;
+  background: var(--ink); color: var(--on-ink); border-radius: 3px; display: grid; place-items: center;
+  font-family: var(--mono); font-weight: 600; font-size: .75rem; font-variant-numeric: tabular-nums;
+}
+
+/* Sign-in. */
+.signin { display: flex; flex-direction: column; justify-content: center; min-height: 70dvh; }
+.signin .g_id_signin { min-height: 48px; margin-top: 8px; }

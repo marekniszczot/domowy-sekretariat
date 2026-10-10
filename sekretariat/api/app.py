@@ -1,17 +1,22 @@
 """FastAPI application: sign-in, session, internal processing endpoint.
 
-The HTML screens (T7.4) are added on top of `create_app` and use `current_user`
-and the `Letters` service; every access check lives in letters.py / access.py.
+The HTML screens (T7.4) live in sekretariat/web and use the `Letters` service;
+every access check lives in letters.py / access.py.
+
+Browser POSTs must come from our own origin (CSRF, on top of SameSite=Lax), except
+/auth/google, which Google posts from its own page with a double-submit token, and
+/internal/*, which Cloud Tasks calls with an OIDC token.
 """
 
 import hmac
-import html
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from sekretariat.auth import (
     SESSION_COOKIE,
@@ -26,6 +31,9 @@ from sekretariat.household import Member
 from sekretariat.letters import Letters
 
 log = logging.getLogger(__name__)
+
+STATIC = Path(__file__).resolve().parent.parent / "web" / "static"
+CROSS_ORIGIN_POSTS = {"/auth/google"}
 
 
 @dataclass
@@ -43,31 +51,30 @@ class AppConfig:
 
 
 def create_app(config: AppConfig) -> FastAPI:
+    from sekretariat.web import pages
+
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.config = config
+    app.mount("/static", StaticFiles(directory=STATIC), name="static")
+    app.include_router(pages.router)
+
+    @app.middleware("http")
+    async def same_origin_posts(request: Request, call_next):
+        path = request.url.path
+        if (
+            request.method == "POST"
+            and path not in CROSS_ORIGIN_POSTS
+            and not path.startswith("/internal/")
+        ):
+            expected = config.base_url or f"{request.url.scheme}://{request.url.netloc}"
+            if request.headers.get("origin") != expected:
+                log.info("POST %s refused: wrong origin", path)
+                return PlainTextResponse("forbidden", status_code=403)
+        return await call_next(request)
 
     @app.get("/health")
     def health():
         return {"ok": True}
-
-    @app.get("/", response_class=HTMLResponse)
-    def home(request: Request):
-        # Temporary sign-in check page; T7.4 replaces it with the real screens.
-        member = config.sessions.member(request.cookies.get(SESSION_COOKIE), config.household)
-        if member is not None:
-            return (
-                "<!doctype html><meta name=viewport content='width=device-width'>"
-                f"<p>Zalogowano: {html.escape(member.id)} ({member.role.value})</p>"
-                "<form method=post action=/logout><button>Wyloguj</button></form>"
-            )
-        return (
-            "<!doctype html><meta name=viewport content='width=device-width'>"
-            "<script src='https://accounts.google.com/gsi/client' async></script>"
-            f"<div id=g_id_onload data-client_id='{html.escape(config.google_client_id)}'"
-            f" data-ux_mode=redirect data-login_uri='{html.escape(config.base_url)}/auth/google'"
-            " data-auto_prompt=false></div>"
-            "<div class=g_id_signin data-type=standard data-locale=pl></div>"
-        )
 
     @app.post("/auth/google")
     def google_login(request: Request, credential: str = Form(...), g_csrf_token: str = Form(...)):
@@ -81,7 +88,7 @@ def create_app(config: AppConfig) -> FastAPI:
             )
         except AuthError as error:
             log.info("sign-in refused: %s", error)
-            raise HTTPException(403, "not in this household") from None
+            return pages.render(request, "outside.html", status_code=403)
         response = RedirectResponse("/", status_code=303)
         response.set_cookie(
             SESSION_COOKIE,

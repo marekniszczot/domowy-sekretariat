@@ -9,6 +9,8 @@
 #       combines them in both orders ("Jan Przykładowy", "Przykładowy, Jan"), so do
 #       not list combinations. A surname shared by several members is allowed: alone
 #       it becomes OSOBA_DOMU. First name forms must be unique across the household.
+# display_name: optional, how the app shows the member ("Babcia Zosia"); defaults to
+#       the first of first_name_forms, so list the nominative first.
 members:
   - id: ewa
     role: domownik
@@ -24,5 +26,6 @@ members:
 
   - id: zofia
     role: bez_konta
+    display_name: Babcia Zosia
     first_name_forms: [Zofia, Zofii, Zofię, Zofią, Zofio]
     surname_forms: [Wzorcowa, Wzorcowej, Wzorcową]

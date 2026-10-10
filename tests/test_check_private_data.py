@@ -15,6 +15,7 @@ members:
     emails: [jan.przyklad@example.com]
     first_name_forms: [Jan, Jana]
     surname_forms: [Przykładowy]
+    display_name: Dziadek Janek
 """
 
 
@@ -45,6 +46,7 @@ def test_private_files_are_blocked(repo, name):
         "JAN PRZYKŁADOWY",
         "kontakt: jan.przyklad@example.com",
         "pani Przykładowa",
+        "Przekaż: Dziadek Janek",
         "adres: ul. Testowa 7, Warszawa",
     ],
 )

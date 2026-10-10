@@ -32,6 +32,7 @@ class _MemberConfig(BaseModel, extra="forbid"):
     emails: list[_Email] = []
     first_name_forms: list[str] = Field(min_length=1)
     surname_forms: list[str] = []
+    display_name: str = ""
 
     @model_validator(mode="after")
     def _email_for_accounts(self) -> "_MemberConfig":
@@ -89,7 +90,14 @@ def parse_household(text: str) -> list[Member]:
         )
         raise ConfigError(f"invalid household configuration: {problems}") from None
     return [
-        Member(m.id, m.role, tuple(m.first_name_forms), tuple(m.surname_forms), tuple(m.emails))
+        Member(
+            m.id,
+            m.role,
+            tuple(m.first_name_forms),
+            tuple(m.surname_forms),
+            tuple(m.emails),
+            m.display_name.strip(),
+        )
         for m in config.members
     ]
 
