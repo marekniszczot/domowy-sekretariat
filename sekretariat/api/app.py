@@ -5,12 +5,13 @@ and the `Letters` service; every access check lives in letters.py / access.py.
 """
 
 import hmac
+import html
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from sekretariat.auth import (
     SESSION_COOKIE,
@@ -37,6 +38,7 @@ class AppConfig:
     tasks_audience: str
     tasks_service_account: str
     process: Callable[[str, int], str]
+    base_url: str = ""
     secure_cookies: bool = True
 
 
@@ -44,9 +46,28 @@ def create_app(config: AppConfig) -> FastAPI:
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.config = config
 
-    @app.get("/healthz")
-    def healthz():
+    @app.get("/health")
+    def health():
         return {"ok": True}
+
+    @app.get("/", response_class=HTMLResponse)
+    def home(request: Request):
+        # Temporary sign-in check page; T7.4 replaces it with the real screens.
+        member = config.sessions.member(request.cookies.get(SESSION_COOKIE), config.household)
+        if member is not None:
+            return (
+                "<!doctype html><meta name=viewport content='width=device-width'>"
+                f"<p>Zalogowano: {html.escape(member.id)} ({member.role.value})</p>"
+                "<form method=post action=/logout><button>Wyloguj</button></form>"
+            )
+        return (
+            "<!doctype html><meta name=viewport content='width=device-width'>"
+            "<script src='https://accounts.google.com/gsi/client' async></script>"
+            f"<div id=g_id_onload data-client_id='{html.escape(config.google_client_id)}'"
+            f" data-ux_mode=redirect data-login_uri='{html.escape(config.base_url)}/auth/google'"
+            " data-auto_prompt=false></div>"
+            "<div class=g_id_signin data-type=standard data-locale=pl></div>"
+        )
 
     @app.post("/auth/google")
     def google_login(request: Request, credential: str = Form(...), g_csrf_token: str = Form(...)):

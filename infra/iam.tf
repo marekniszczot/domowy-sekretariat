@@ -77,7 +77,7 @@ resource "google_secret_manager_secret_iam_member" "web" {
 }
 
 resource "google_secret_manager_secret_iam_member" "jobs" {
-  for_each = google_secret_manager_secret.this
+  for_each = { for name, secret in google_secret_manager_secret.this : name => secret if name != "session-secret" }
 
   secret_id = each.value.id
   role      = "roles/secretmanager.secretAccessor"

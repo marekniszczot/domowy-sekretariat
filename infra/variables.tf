@@ -40,3 +40,13 @@ variable "placeholder_image" {
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
+
+variable "google_client_id" {
+  description = "OAuth client id for Sign in with Google (created by hand, see README)."
+  type        = string
+}
+
+variable "web_base_url" {
+  description = "Public URL of the web service, registered in the OAuth client."
+  type        = string
+}

@@ -42,9 +42,10 @@ resource "google_document_ai_processor" "ocr" {
   depends_on = [google_project_service.this]
 }
 
-# Containers only; versions are added outside this task (household config: T10, SMTP: T8).
+# Containers only; versions are added with gcloud so values never reach the Terraform state
+# (household config: scripts/upload_household.sh, session secret: infra/README.md, SMTP: T8).
 resource "google_secret_manager_secret" "this" {
-  for_each = toset(["household-config", "smtp-password"])
+  for_each = toset(["household-config", "session-secret", "smtp-password"])
 
   secret_id = each.value
 

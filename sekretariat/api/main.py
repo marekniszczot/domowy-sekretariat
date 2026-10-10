@@ -77,6 +77,7 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
             tasks_audience=environ["BASE_URL"].rstrip("/"),
             tasks_service_account=environ["TASKS_SERVICE_ACCOUNT"],
             process=lambda letter_id, attempt: process(services, letter_id, attempt),
+            base_url=environ["BASE_URL"].rstrip("/"),
         )
     )
 

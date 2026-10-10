@@ -180,3 +180,10 @@ def test_internal_process_refuses_other_callers(app_and_calls, headers):
     app, calls = app_and_calls
     assert client(app).post("/internal/process/L1", headers=headers).status_code == 403
     assert calls == []
+
+
+def test_health_and_signed_out_home(app_and_calls):
+    app, _ = app_and_calls
+    http = client(app)
+    assert http.get("/health").json() == {"ok": True}
+    assert "g_id_signin" in http.get("/").text  # Cloud Run reserves /healthz

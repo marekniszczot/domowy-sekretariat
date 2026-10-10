@@ -40,6 +40,41 @@ resource "google_cloud_run_v2_service" "web" {
 
     containers {
       image = var.placeholder_image
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+
+      dynamic "env" {
+        for_each = {
+          PROJECT_ID            = var.project_id
+          REGION                = var.region
+          LETTERS_BUCKET        = google_storage_bucket.letters.name
+          OCR_PROCESSOR         = google_document_ai_processor.ocr.id
+          TASKS_QUEUE           = google_cloud_tasks_queue.process.id
+          TASKS_SERVICE_ACCOUNT = google_service_account.tasks.email
+          BASE_URL              = var.web_base_url
+          GOOGLE_CLIENT_ID      = var.google_client_id
+          HOUSEHOLD_SECRET      = google_secret_manager_secret.this["household-config"].id
+        }
+        content {
+          name  = env.key
+          value = env.value
+        }
+      }
+
+      env {
+        name = "SESSION_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["session-secret"].secret_id
+            version = "latest"
+          }
+        }
+      }
     }
   }
 
