@@ -291,3 +291,26 @@ a { color: inherit; }
 .undo-bar button { min-height: 48px; padding: 0 12px; border: 0; background: transparent; color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .undo-bar.gone { opacity: 0; }
 @media (prefers-reduced-motion: reduce) { .sheet { transition: none; } }
+
+/* „Wszystkie”: the list, and on a phone the chosen letter alone. */
+.row[aria-current="page"] { background: var(--veil); border-radius: var(--r-sm); margin-inline: -8px; padding-inline: 8px; }
+.split.has-letter .list-pane { display: none; }
+
+/* From 900 px (DR-15): tabs become a left sidebar, „Wszystkie” shows the letter beside the list. */
+@media (min-width: 900px) {
+  body:has(.tabs) { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+  .tabs {
+    grid-column: 1; grid-row: 1; position: sticky; top: 0; height: 100dvh; align-self: start;
+    display: flex; flex-direction: column; gap: 4px; padding: 24px 12px; border-top: 0; border-right: 1px solid var(--rule); background: var(--ground);
+  }
+  .tab { flex-direction: row; justify-content: flex-start; gap: 12px; padding: 0 12px; border-radius: var(--r-sm); font-size: 1rem; font-weight: 700; }
+  .tab[aria-current="page"] { background: var(--veil); }
+  .badge { position: static; margin-left: auto; order: 2; }
+  .page { grid-column: 2; grid-row: 1; padding-top: 32px; }
+  .page:has(.split) { max-width: 1100px; }
+  .split { display: grid; grid-template-columns: 360px minmax(0, 680px); gap: 32px; align-items: start; }
+  .split.has-letter .list-pane { display: block; }
+  .split .letter-pane > .back { display: none; }
+  .list-pane { position: sticky; top: 32px; max-height: calc(100dvh - 64px); overflow: auto; padding-right: 8px; }
+  .undo-bar { bottom: 24px; }
+}

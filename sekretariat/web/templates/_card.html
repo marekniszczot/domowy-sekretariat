@@ -1,0 +1,122 @@
+<a class="back" href="{{ back_href }}">‹ {{ back_label }}</a>
+{% if failed %}<p class="notice"><span class="i t-urgent" aria-hidden="true">▲</span><span>Nie udało się. Spróbuj ponownie.</span></p>{% endif %}
+{% if duplicate %}<p class="notice"><span class="i t-todo" aria-hidden="true">●</span><span>To pismo już jest. Pokazuję je zamiast dodawać drugi raz.</span></p>{% endif %}
+<div class="paper{% if first %} jolt{% endif %}">
+  <div class="letter-band">
+    {% if photo %}<img src="{{ photo }}" alt="" onerror="this.remove()">{% endif %}
+    <div class="veil"></div>
+  </div>
+  <div class="stamp verdict-stamp {{ state }}{% if first %} land{% endif %}">
+    <div class="state"><span aria-hidden="true">{{ icon }}</span> {{ label }}</div>
+    <div class="verb">{{ verb }}</div>
+    <div class="when">{{ when }}</div>
+  </div>
+</div>
+<p class="meta"><strong>{{ sender }}</strong>{{ delivered }}</p>
+{% if confidence %}<p class="confidence">{{ confidence }}</p>{% endif %}
+{% if deadline %}
+<button class="deadline unconfirmed" type="button" popovertarget="deadline-sheet">
+  najpóźniej {{ deadline.short }} <span class="check">Sprawdź</span>
+</button>
+{% endif %}
+
+{% if unreadable %}
+<p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Nie mogę odczytać. Zrób zdjęcie jeszcze raz w lepszym świetle.</span></p>
+<a class="btn primary" href="/dodaj">Zrób ponownie</a>
+{% elif reason %}
+<p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Przekaż to pismo dalej. Powód: {{ reason }}.</span></p>
+{% endif %}
+
+{% if summary %}
+<h2 class="section-h">O co chodzi</h2>
+<p class="p">{{ summary }}</p>
+{% endif %}
+
+{% if consequence %}
+<h2 class="section-h"><span class="t-urgent" aria-hidden="true">▲</span> Jeśli zignorujesz</h2>
+<p class="quote">„{{ consequence[0] }}<mark>{{ consequence[1] }}</mark>{{ consequence[2] }}”</p>
+{% endif %}
+
+{% if rule %}
+<h2 class="section-h">{{ why }}</h2>
+<p class="rule-line">„{{ rule }}”</p>
+<p class="rule-src">Domowy regulamin</p>
+{% endif %}
+
+{% if quotes %}
+<details class="in-letter">
+  <summary class="row-btn"><span>Pokaż w piśmie</span><span aria-hidden="true">⌄</span></summary>
+  {% for before, marked, after in quotes %}
+  <p class="quote">„{{ before }}<mark>{{ marked }}</mark>{{ after }}”</p>
+  {% endfor %}
+</details>
+{% endif %}
+
+{% if reveal %}
+<form method="post" action="/pisma/{{ id }}/odkryj{{ act_suffix }}" class="reveal">
+  <p class="muted">To pismo jest prywatne: {{ coordinator }} widzi tylko nadawcę i termin.</p>
+  <button class="btn ghost" type="submit">Odkryj dla: {{ coordinator }}</button>
+</form>
+{% endif %}
+
+{% if primary or sheet or reopen %}
+<div class="action-bar">
+  {% if sheet %}<button class="btn" type="button" popovertarget="forward-sheet">Przekaż</button>{% endif %}
+  {% if primary == "take" %}
+  <form method="post" action="/pisma/{{ id }}/zajme-sie{{ act_suffix }}"><button class="btn primary" type="submit">Zajmę się tym</button></form>
+  {% elif primary == "done" %}
+  <form method="post" action="/pisma/{{ id }}/zrobione{{ act_suffix }}"><button class="btn primary" type="submit">Zrobione</button></form>
+  {% endif %}
+  {% if reopen %}
+  <form method="post" action="/pisma/{{ id }}/otworz{{ act_suffix }}"><button class="btn" type="submit">Otwórz ponownie</button></form>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if sheet %}
+<div class="sheet" id="forward-sheet" popover>
+  <div class="grab" aria-hidden="true"></div>
+  <h2 class="sheet-title">Komu przekazać?</h2>
+  {% if sheet.private %}
+  <p class="muted">{% if sheet.suggestion %}{{ sheet.suggestion.name }}{% else %}Ta osoba{% endif %} zobaczy całą treść tego pisma.</p>
+  {% endif %}
+  {% if sheet.suggestion %}
+  <form method="post" action="/pisma/{{ id }}/przekaz{{ act_suffix }}">
+    <input type="hidden" name="target" value="{{ sheet.suggestion.id }}">
+    <input type="hidden" name="confirmed" value="true">
+    <button class="suggest" type="submit"><span class="n">{{ sheet.suggestion.name }}</span><span class="why">bo: {{ sheet.why }}</span></button>
+  </form>
+  {% endif %}
+  {% if sheet.others %}
+  <p class="label">{% if sheet.suggestion %}Albo komuś innemu:{% else %}Wybierz osobę:{% endif %}</p>
+  <div class="others">
+    {% for member in sheet.others %}
+    <form method="post" action="/pisma/{{ id }}/przekaz{{ act_suffix }}">
+      <input type="hidden" name="target" value="{{ member.id }}">
+      <input type="hidden" name="confirmed" value="true">
+      <button class="btn" type="submit">{{ member.name }}</button>
+    </form>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <button class="btn ghost" type="button" popovertarget="forward-sheet" popovertargetaction="hide">Anuluj</button>
+</div>
+{% endif %}
+
+{% if deadline %}
+<div class="sheet" id="deadline-sheet" popover>
+  <div class="grab" aria-hidden="true"></div>
+  <h2 class="sheet-title">Sprawdź termin</h2>
+  {% if deadline.quote %}
+  <p class="quote">„{{ deadline.quote[0] }}<mark>{{ deadline.quote[1] }}</mark>{{ deadline.quote[2] }}”</p>
+  {% endif %}
+  <p class="muted">Termin jest wyliczony ostrożnie. Jeśli w piśmie jest inna data, popraw ją.</p>
+  <form method="post" action="/pisma/{{ id }}/termin{{ act_suffix }}" class="deadline-form">
+    <label class="field"><span>Termin</span><input type="date" name="deadline" value="{{ deadline.date }}" data-original="{{ deadline.date }}"></label>
+    <button class="btn primary" type="submit" data-same="Zgadza się" data-changed="Zapisz tę datę">Zgadza się</button>
+  </form>
+  <button class="btn ghost" type="button" popovertarget="deadline-sheet" popovertargetaction="hide">Anuluj</button>
+</div>
+{% endif %}
+
+{% include "_undo.html" %}

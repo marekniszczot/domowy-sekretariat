@@ -7,12 +7,15 @@ the `Letters` service returns for the signed-in member.
     GET /pisma/{id}               verdict card, processing steps or metadata (DR-5)
     GET /pisma/{id}/kroki         processing steps fragment, polled by htmx
     GET /pisma/{id}/strona/{n}    page photo for the greyed band (DR-1)
+    GET /wszystkie[/{id}]         the household's letters, coordinator only (DR-3);
+                                  with an id, the letter beside the list (DR-15)
     GET/POST /dodaj               upload: pages, delivery date, private (DR-6, DR-7)
     POST /pisma/{id}/<akcja>      zajme-sie, przekaz, termin, zrobione, otworz, odkryj,
                                   cofnij; each redirects (POST-redirect-GET) and the
                                   next page shows the „Cofnij” bar for 8 s (DR-8)
 """
 
+import dataclasses
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -54,12 +57,20 @@ class Tab:
     badge: int = 0
 
 
-def tabs(user: Member, open_count: int = 0) -> list[Tab]:
+def tabs(user: Member, badge: int = 0) -> list[Tab]:
     """DR-2. A bar with a single tab is not shown."""
-    return [
+    bar = [
         Tab("add", "Dodaj pismo", "/dodaj"),
-        Tab("mine", "Moje pisma", "/", open_count),
+        Tab("mine", "Moje pisma", "/", badge),
     ]
+    if user.role == Role.KOORDYNATOR:
+        bar.append(Tab("all", "Wszystkie", "/wszystkie"))
+    return bar
+
+
+def open_count(mine: list[dict]) -> int:
+    """The badge on „Moje pisma”."""
+    return sum(1 for letter in mine if letter.get("state") != "closed")
 
 
 def today() -> date:
@@ -104,13 +115,12 @@ def home(request: Request):
         (g.title, [present.row(letter, True, user, config.household, day) for letter in g.letters])
         for g in present.group(letters, day)
     ]
-    open_count = sum(1 for letter in letters if letter.get("state") != "closed")
     return render(
         request,
         "mine.html",
         {
             "groups": groups,
-            "tabs": tabs(user, open_count),
+            "tabs": tabs(user, open_count(letters)),
             "active": "mine",
             "undo": undo_bar(config, user, request.query_params.get("cofnij"), "/"),
         },
@@ -176,42 +186,117 @@ def upload_page(request: Request, user: Member, error: str = "", status_code: in
     )
 
 
+@dataclass(frozen=True)
+class Place:
+    """Where a letter is shown: from Moje pisma, or inside Wszystkie (DR-15)."""
+
+    back_href: str
+    back_label: str
+    letter: str  # URL prefix of the letter view
+    act_suffix: str  # appended to action URLs so redirects come back here
+
+
+MINE = Place("/", "Moje pisma", "/pisma", "")
+ALL = Place("/wszystkie", "Wszystkie", "/wszystkie", "?z=wszystkie")
+
+
+def letter_view(request: Request, letter_id: str, user: Member, place: Place):
+    """(template, context) for one letter, or None when the user may not see it."""
+    config = request.app.state.config
+    try:
+        letter, level = config.letters.get(letter_id, user)
+    except NotFound:
+        return None
+    day = today()
+    names = {m.id: m.name for m in config.household}
+    common = {"back_href": place.back_href, "back_label": place.back_label}
+    if level == View.METADATA:
+        due = present.deadline_date(letter)
+        return "_private.html", common | {
+            "sender": present.sender_label(letter.get("sender_type")),
+            "owner": names.get(letter.get("owner"), ""),
+            "when": present.when_line(letter, day) if due else "bez terminu",
+        }
+    duplicate = request.query_params.get("duplikat") == "1"
+    if letter.get("status") in PROCESSING:
+        return "processing.html", steps_context(letter) | {"duplicate": duplicate}
+    first = config.letters.mark_seen(letter_id, user)
+    here = f"{place.letter}/{letter_id}"
+    undo_id = letter_id if "cofnij" in request.query_params else None
+    return "_card.html", card(letter, user, config, day, first) | common | {
+        "duplicate": duplicate,
+        "failed": request.query_params.get("blad") == "1",
+        "act_suffix": place.act_suffix,
+        "undo": undo_bar(config, user, undo_id, here),
+    }
+
+
 @router.get("/pisma/{letter_id}")
 def letter_page(request: Request, letter_id: str):
     user = signed_in(request)
     if user is None:
         return login_page(request)
+    view = letter_view(request, letter_id, user, MINE)
+    if view is None:
+        return not_found(request)
+    template, context = view
+    page = {"_card.html": "card.html", "_private.html": "private.html"}.get(template, template)
+    return render(request, page, context)
+
+
+@router.get("/wszystkie")
+def all_letters(request: Request):
+    return _all(request, None)
+
+
+@router.get("/wszystkie/{letter_id}")
+def all_letters_with_one(request: Request, letter_id: str):
+    return _all(request, letter_id)
+
+
+def _all(request: Request, letter_id: str | None):
+    """„Wszystkie” (DR-3): coordinator only; private letters as metadata (DR-5)."""
+    user = signed_in(request)
+    if user is None:
+        return login_page(request)
     config = request.app.state.config
     try:
-        letter, level = config.letters.get(letter_id, user)
-    except NotFound:
+        letters = config.letters.household_letters(user)
+    except Forbidden:
         return not_found(request)
+    context = {}
+    if letter_id is not None:
+        view = letter_view(request, letter_id, user, ALL)
+        if view is None:
+            return not_found(request)
+        template, context = view
+        if template == "processing.html":
+            return RedirectResponse(f"/pisma/{letter_id}", status_code=303)
+        context = context | {"selected": template}
     day = today()
-    names = {m.id: m.name for m in config.household}
-    if level == View.METADATA:
-        due = present.deadline_date(letter)
-        return render(
-            request,
-            "private.html",
-            {
-                "sender": present.sender_label(letter.get("sender_type")),
-                "owner": names.get(letter.get("owner"), ""),
-                "when": present.when_line(letter, day) if due else "bez terminu",
-            },
-        )
-    duplicate = request.query_params.get("duplikat") == "1"
-    if letter.get("status") in PROCESSING:
-        return render(request, "processing.html", steps_context(letter) | {"duplicate": duplicate})
-    first = config.letters.mark_seen(letter_id, user)
-    here = f"/pisma/{letter_id}"
-    context = card(letter, user, config, day, first) | {
-        "duplicate": duplicate,
-        "failed": request.query_params.get("blad") == "1",
-        "undo": undo_bar(
-            config, user, letter_id if "cofnij" in request.query_params else None, here
-        ),
-    }
-    return render(request, "card.html", context)
+    full = {letter["id"]: level == View.FULL for letter, level in letters}
+    plain = [letter for letter, _ in letters]
+
+    def row(letter: dict):
+        r = present.row(letter, full[letter["id"]], user, config.household, day)
+        if letter.get("status") in PROCESSING:
+            return r
+        return dataclasses.replace(r, href=f"/wszystkie/{letter['id']}")
+
+    groups = [(g.title, [row(letter) for letter in g.letters]) for g in present.group(plain, day)]
+    return render(
+        request,
+        "all.html",
+        context
+        | {
+            "groups": groups,
+            "current": f"/wszystkie/{letter_id}" if letter_id else None,
+            "tabs": tabs(user, open_count(config.letters.mine(user))),
+            "active": "all",
+            "undo": context.get("undo")
+            or undo_bar(config, user, request.query_params.get("cofnij"), "/wszystkie"),
+        },
+    )
 
 
 @router.get("/pisma/{letter_id}/kroki")
@@ -330,14 +415,15 @@ def _act(request: Request, letter_id: str, action, after: str):
     user = signed_in(request)
     if user is None:
         return Response(status_code=401)
-    here = f"/pisma/{letter_id}"
+    place = ALL if request.query_params.get("z") == "wszystkie" else MINE
+    here = f"{place.letter}/{letter_id}"
     try:
         action(request.app.state.config.letters, user)
     except NotFound:
         return not_found(request)
     except (Forbidden, NeedsConfirmation, ValueError):
         return RedirectResponse(f"{here}?blad=1", status_code=303)
-    target = f"/?cofnij={letter_id}" if after == "list" else f"{here}?cofnij=1"
+    target = f"{place.back_href}?cofnij={letter_id}" if after == "list" else f"{here}?cofnij=1"
     return RedirectResponse(target, status_code=303)
 
 

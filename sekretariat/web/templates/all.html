@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% from "_row.html" import letter_row %}
+{% block title %}Wszystkie · Domowy Sekretariat{% endblock %}
+{% block head %}<script src="/static/app.js" defer></script>{% endblock %}
+{% block content %}
+<div class="split{% if selected %} has-letter{% endif %}">
+  <section class="list-pane" aria-label="Pisma domu">
+    <h1 class="title">Wszystkie</h1>
+    {% for title, rows in groups %}
+    <section aria-labelledby="g{{ loop.index }}">
+      <h2 class="group-h" id="g{{ loop.index }}">{{ title }}</h2>
+      {% for r in rows %}{{ letter_row(r, r.href == current) }}{% endfor %}
+    </section>
+    {% else %}
+    <p class="empty">W domu wszystko ogarnięte.</p>
+    <p class="muted">Najbliższy termin: brak.</p>
+    {% endfor %}
+  </section>
+  {% if selected %}
+  <section class="letter-pane" aria-label="Pismo">
+    {% include selected %}
+  </section>
+  {% endif %}
+</div>
+{% if not selected %}{% include "_undo.html" %}{% endif %}
+{% endblock %}

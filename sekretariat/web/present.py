@@ -286,7 +286,7 @@ class Row:
 
     href: str
     mini: str  # CSS classes of the mini stamp
-    icon: str
+    icon: str  # state icon, or "lock" for a private letter
     who: str
     sub: str
     count: str
@@ -308,7 +308,7 @@ def row(letter: dict, full: bool, user: Member, household: list[Member], today: 
         return Row(href, "mini pending", "…", who, "Czytam pismo…", "", "", "muted")
     if not full:
         sub = " · ".join(filter(None, [owner, "prywatne"]))
-        return Row(href, "mini private", "🔒︎", who, sub, count, "Prywatne", "muted")
+        return Row(href, "mini private", "lock", who, sub, count, "Prywatne", "muted")
 
     current = state(letter, today)
     unconfirmed = due is not None and not _confirmed(letter) and _open(letter)

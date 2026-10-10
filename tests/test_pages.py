@@ -397,3 +397,60 @@ def test_undo_only_returns_to_our_own_pages(app, store, back):
 def test_fonts_are_served_as_woff2(app):
     response = as_member(app, None).get("/static/fonts/bricolage-latin.woff2")
     assert response.headers["content-type"] == "font/woff2"
+
+
+# Wszystkie (DR-3, DR-15)
+
+
+def test_household_list_is_for_the_coordinator_only(app, store):
+    verdict_letter(store)
+    assert as_member(app, DOM1).get("/wszystkie").status_code == 404
+    assert 'href="/wszystkie"' not in as_member(app, DOM1).get("/").text
+    page = as_member(app, KOORD).get("/").text
+    assert 'href="/wszystkie"' in page
+
+
+def test_household_list_shows_private_letters_as_metadata(app, store):
+    verdict_letter(store, deadline={"date": iso(2), "basis": "STATED", "confirmed": True})
+    private_id = verdict_letter(store, private=True)
+    page = as_member(app, KOORD).get("/wszystkie").text
+    assert page.count('class="row"') == 2
+    assert "Ala · prywatne" in page and "Prywatne" in page
+    assert f'href="/wszystkie/{private_id}"' in page
+
+
+def test_empty_household_list(app):
+    page = as_member(app, KOORD).get("/wszystkie").text
+    assert "W domu wszystko ogarnięte." in page
+
+
+def test_letter_beside_the_list(app, store):
+    letter_id = verdict_letter(store)
+    page = as_member(app, KOORD).get(f"/wszystkie/{letter_id}").text
+    assert 'class="split has-letter"' in page
+    assert f'href="/wszystkie/{letter_id}" aria-current="page"' in page
+    assert "Opłać rachunek" in page and '<a class="back" href="/wszystkie">‹ Wszystkie</a>' in page
+    assert f'action="/pisma/{letter_id}/zajme-sie?z=wszystkie"' in page
+
+
+def test_private_letter_beside_the_list_is_metadata(app, store):
+    letter_id = verdict_letter(store, private=True)
+    page = as_member(app, KOORD).get(f"/wszystkie/{letter_id}").text
+    assert "To pismo jest prywatne" in page and "Rachunek za prąd" not in page
+
+
+def test_actions_from_wszystkie_come_back_to_it(app, store):
+    letter_id = verdict_letter(store, owner="koord")
+    http = as_member(app, KOORD)
+    response = http.post(f"/pisma/{letter_id}/zajme-sie?z=wszystkie")
+    assert response.headers["location"] == f"/wszystkie/{letter_id}?cofnij=1"
+    assert "Zajmiesz się tym pismem." in http.get(response.headers["location"]).text
+    response = http.post(f"/pisma/{letter_id}/zrobione?z=wszystkie")
+    assert response.headers["location"] == f"/wszystkie?cofnij={letter_id}"
+    assert "Oznaczono jako zrobione." in http.get(response.headers["location"]).text
+
+
+def test_processing_letter_from_wszystkie_opens_its_steps(app, store):
+    letter_id = store.create_letter({"status": "received", "uploaded_by": "dom1"})
+    response = as_member(app, KOORD).get(f"/wszystkie/{letter_id}")
+    assert response.headers["location"] == f"/pisma/{letter_id}"

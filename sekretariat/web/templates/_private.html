@@ -1,0 +1,8 @@
+{% from "_icons.html" import lock %}
+<a class="back" href="{{ back_href }}">‹ {{ back_label }}</a>
+<div class="private-head">
+  <span class="mini private" aria-hidden="true">{{ lock() }}</span>
+  <h1 class="title">{{ sender }}</h1>
+</div>
+<p class="meta"><strong>{{ when }}</strong>{% if owner %}zajmuje się: {{ owner }}{% endif %}</p>
+<p class="notice"><span class="i" aria-hidden="true">{{ lock(20) }}</span><span>To pismo jest prywatne. Widać tylko nadawcę, termin i to, kto się nim zajmuje.</span></p>
