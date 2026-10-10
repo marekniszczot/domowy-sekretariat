@@ -24,10 +24,12 @@ def analysis(**overrides) -> LetterAnalysis:
         "rule_trigger_quote": "Nie musi Pan nic robić",
         "deadline_type": "NONE",
         "deadline_date": None,
-        "deadline_relative_days": None,
-        "deadline_relative_anchor": None,
+        "deadline_relative_amount": None,
+        "deadline_relative_unit": None,
         "deadline_quote": None,
         "consequence_quote": None,
+        "letter_date": None,
+        "letter_date_quote": None,
         "confidence": 0.95,
     }
     return LetterAnalysis(**(fields | overrides))

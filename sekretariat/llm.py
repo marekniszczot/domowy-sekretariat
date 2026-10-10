@@ -44,6 +44,12 @@ class DeadlineType(StrEnum):
     NONE = "NONE"
 
 
+class DeadlineUnit(StrEnum):
+    DAYS = "DAYS"
+    WEEKS = "WEEKS"
+    MONTHS = "MONTHS"
+
+
 class LetterAnalysis(BaseModel):
     sender_type: SenderType
     addressee: str = Field(description="OSOBA_n, INNA_n, INNA albo NIEZNANY")
@@ -54,11 +60,17 @@ class LetterAnalysis(BaseModel):
     rule_trigger_quote: str = Field(description="Dosłowny fragment pisma, który uruchomił regułę")
     deadline_type: DeadlineType
     deadline_date: date | None = Field(description="Dla ABSOLUTE: data w formacie RRRR-MM-DD")
-    deadline_relative_days: int | None = Field(description="Dla RELATIVE: liczba dni")
-    deadline_relative_anchor: str | None = Field(
-        description="Dla RELATIVE: od czego liczyć, np. „od dnia doręczenia”"
+    deadline_relative_amount: int | None = Field(
+        ge=1, description="Dla RELATIVE: liczba jednostek, np. 14"
     )
-    deadline_quote: str | None = Field(description="Dosłowny fragment z terminem")
+    deadline_relative_unit: DeadlineUnit | None = Field(
+        description="Dla RELATIVE: jednostka tak, jak w piśmie"
+    )
+    deadline_quote: str | None = Field(
+        description="Dosłowny fragment z terminem, razem z tym, od czego się go liczy"
+    )
+    letter_date: date | None = Field(description="Data wystawienia pisma")
+    letter_date_quote: str | None = Field(description="Dosłowny fragment z datą wystawienia pisma")
     consequence_quote: str | None = Field(
         description="Dosłowny fragment o skutkach zignorowania pisma albo null"
     )
@@ -73,9 +85,11 @@ class LetterAnalysis(BaseModel):
         if self.deadline_type == DeadlineType.ABSOLUTE and self.deadline_date is None:
             raise ValueError("ABSOLUTE deadline without deadline_date")
         if self.deadline_type == DeadlineType.RELATIVE and (
-            self.deadline_relative_days is None or not self.deadline_relative_anchor
+            self.deadline_relative_amount is None or self.deadline_relative_unit is None
         ):
-            raise ValueError("RELATIVE deadline without days or anchor")
+            raise ValueError("RELATIVE deadline without amount or unit")
+        if self.letter_date is not None and not self.letter_date_quote:
+            raise ValueError("letter_date without letter_date_quote")
         if self.deadline_type != DeadlineType.NONE and not self.deadline_quote:
             raise ValueError("deadline without deadline_quote")
         return self
@@ -100,8 +114,11 @@ Zasady:
   Jeśli żadna reguła nie pasuje, daj FORWARD i rule_id null.
 - Każde pole *_quote to fragment skopiowany z <pismo> znak w znak, bez parafrazy.
   rule_trigger_quote jest wymagany zawsze, także przy NONE.
-- Termin: ABSOLUTE, gdy pismo podaje datę; RELATIVE, gdy podaje liczbę dni od zdarzenia
-  (nie przeliczaj go na datę); NONE, gdy terminu nie ma.
+- Termin: ABSOLUTE, gdy pismo podaje datę; RELATIVE, gdy podaje liczbę dni, tygodni
+  albo miesięcy (nie przeliczaj ich na datę ani na inną jednostkę; „dni robocze” to DAYS);
+  NONE, gdy terminu nie ma. deadline_quote obejmuje też słowa o tym, od czego liczyć
+  termin (np. „od dnia doręczenia”), jeśli pismo je podaje.
+- letter_date to data wystawienia pisma, jeśli pismo ją podaje.
 - confidence to Twoja pewność co do werdyktu, od 0 do 1.
 - summary_plain_pl i required_action pisz prostym polskim, bez żargonu.
 """

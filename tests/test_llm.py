@@ -23,10 +23,12 @@ VALID = {
     "rule_trigger_quote": "Nie musi Pan nic robić",
     "deadline_type": "NONE",
     "deadline_date": None,
-    "deadline_relative_days": None,
-    "deadline_relative_anchor": None,
+    "deadline_relative_amount": None,
+    "deadline_relative_unit": None,
     "deadline_quote": None,
     "consequence_quote": None,
+    "letter_date": None,
+    "letter_date_quote": None,
     "confidence": 0.9,
 }
 
@@ -95,7 +97,9 @@ def test_failures_become_llm_failure(client, reason):
         {"rule_trigger_quote": "  "},
         {"confidence": 1.5},
         {"deadline_type": "ABSOLUTE"},
-        {"deadline_type": "RELATIVE", "deadline_relative_days": 14, "deadline_quote": "14 dni"},
+        {"deadline_type": "RELATIVE", "deadline_relative_amount": 14, "deadline_quote": "14 dni"},
+        {"deadline_relative_amount": 0},
+        {"letter_date": "2026-10-01"},
         {"deadline_type": "ABSOLUTE", "deadline_date": "2026-11-30"},
     ],
 )

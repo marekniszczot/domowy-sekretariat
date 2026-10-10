@@ -37,7 +37,7 @@ DEFAULT_ESCALATION = (
     "urz skarbow",
     "wezwani do zapłat",
 )
-QUOTE_FIELDS = ("rule_trigger_quote", "deadline_quote", "consequence_quote")
+QUOTE_FIELDS = ("rule_trigger_quote", "deadline_quote", "consequence_quote", "letter_date_quote")
 
 _PUNCTUATION = str.maketrans({"„": '"', "”": '"', "“": '"', "‚": "'", "‘": "'", "’": "'",
                               "–": "-", "—": "-", " ": " "})  # fmt: skip
