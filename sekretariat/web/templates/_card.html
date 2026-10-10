@@ -6,7 +6,7 @@
     {% if photo %}<img src="{{ photo }}" alt="" onerror="this.remove()">{% endif %}
     <div class="veil"></div>
   </div>
-  <div class="stamp verdict-stamp {{ state }}{% if first %} land{% endif %}">
+  <div class="stamp verdict-stamp {{ state }}{% if first %} land{% endif %}" role="img" aria-label="{{ stamp_label }}">
     <div class="state"><span aria-hidden="true">{{ icon }}</span> {{ label }}</div>
     <div class="verb">{{ verb }}</div>
     <div class="when">{{ when }}</div>
@@ -84,7 +84,7 @@
   <form method="post" action="/pisma/{{ id }}/przekaz{{ act_suffix }}">
     <input type="hidden" name="target" value="{{ sheet.suggestion.id }}">
     <input type="hidden" name="confirmed" value="true">
-    <button class="suggest" type="submit"><span class="n">{{ sheet.suggestion.name }}</span><span class="why">bo: {{ sheet.why }}</span></button>
+    <button class="suggest" type="submit" autofocus><span class="n">{{ sheet.suggestion.name }}</span><span class="why">bo: {{ sheet.why }}</span></button>
   </form>
   {% endif %}
   {% if sheet.others %}
@@ -112,7 +112,7 @@
   {% endif %}
   <p class="muted">Termin jest wyliczony ostrożnie. Jeśli w piśmie jest inna data, popraw ją.</p>
   <form method="post" action="/pisma/{{ id }}/termin{{ act_suffix }}" class="deadline-form">
-    <label class="field"><span>Termin</span><input type="date" name="deadline" value="{{ deadline.date }}" data-original="{{ deadline.date }}"></label>
+    <label class="field"><span>Termin</span><input type="date" name="deadline" value="{{ deadline.date }}" data-original="{{ deadline.date }}" autofocus></label>
     <button class="btn primary" type="submit" data-same="Zgadza się" data-changed="Zapisz tę datę">Zgadza się</button>
   </form>
   <button class="btn ghost" type="button" popovertarget="deadline-sheet" popovertargetaction="hide">Anuluj</button>

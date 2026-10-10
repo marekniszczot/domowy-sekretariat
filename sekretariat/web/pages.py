@@ -371,6 +371,7 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         "label": present.LABEL[current],
         "verb": names(present.verb(letter, day)),
         "when": present.when_line(letter, day),
+        "stamp_label": present.stamp_label(letter, day, names(present.verb(letter, day))),
         "sender": present.sender_label(analysis.get("sender_type")),
         "delivered": present.delivered(date.fromisoformat(delivery), day) if delivery else "",
         "confidence": present.confidence_word(letter) if analysis else None,

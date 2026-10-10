@@ -24,10 +24,12 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "axe-playwright-python>=0.1.8",
     "httpx2>=2.13.1",
     "pillow>=11",
     "pre-commit>=4.6",
     "pytest>=9.1",
+    "pytest-playwright>=0.10.0",
     "ruff>=0.17",
 ]
 
@@ -42,8 +44,9 @@ packages = ["sekretariat"]
 testpaths = ["tests"]
 markers = [
     "integration: calls real GCP APIs; needs GCLOUD_CONFIGURATION and GCP_PROJECT",
+    "e2e: phone-sized browser tests; needs `uv run playwright install webkit`",
 ]
-addopts = "-m 'not integration'"
+addopts = "-m 'not integration and not e2e' --browser webkit"
 
 [tool.ruff]
 line-length = 100

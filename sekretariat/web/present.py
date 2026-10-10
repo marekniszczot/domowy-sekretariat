@@ -146,6 +146,13 @@ def when_line(letter: dict, today: date) -> str:
     return f"{countdown(due, today)} · {until}"
 
 
+def stamp_label(letter: dict, today: date, verb_text: str) -> str:
+    """What VoiceOver reads for the stamp (DESIGN.md, Components): one sentence each."""
+    current = state(letter, today)
+    when = when_line(letter, today).replace(" · ", ", ")
+    return f"{LABEL[current]}. {verb_text}. {when[:1].upper()}{when[1:]}."
+
+
 def confidence_word(letter: dict) -> str:
     confidence = (letter.get("analysis") or {}).get("confidence")
     return "Pewne" if confidence is not None and confidence >= CERTAIN else "Sprawdź"

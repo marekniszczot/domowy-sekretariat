@@ -232,3 +232,10 @@ def test_metadata_only_letters_are_grouped_by_deadline():
     private = {"id": "P", "status": "verdict", "state": "open", "private": True,
                "deadline": {"date": "2026-10-12", "confirmed": True}}  # fmt: skip
     assert [g.title for g in present.group([private], TODAY)] == ["Ten tydzień"]
+
+
+def test_stamp_label_reads_as_sentences():
+    fields = letter("SELF", deadline="2026-10-15", confirmed=True)
+    assert present.stamp_label(fields, TODAY, "Wypowiedz umowę") == (
+        "Do zrobienia. Wypowiedz umowę. Za 6 dni, do czwartku, 15 października."
+    )

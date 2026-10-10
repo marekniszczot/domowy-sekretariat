@@ -277,7 +277,7 @@ a { color: inherit; }
   padding: 16px; min-height: 72px; margin: 12px 0 18px; cursor: pointer; display: flex; flex-direction: column;
 }
 .suggest .n { font-family: var(--display); font-weight: 800; font-size: 1.5rem; }
-.suggest .why { font-size: 1rem; opacity: .9; }
+.suggest .why { font-size: 1rem; }
 .others { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .others form { display: contents; }
 .deadline-form .btn { margin-top: 16px; }
