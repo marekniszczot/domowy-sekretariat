@@ -5,20 +5,22 @@ from types import SimpleNamespace
 
 import pytest
 
+from sekretariat.household import Member
 from sekretariat.mask import (
     ELEVEN_DIGITS,
     ELEVEN_DIGITS_PATTERN,
     PERSON,
     Finding,
-    Member,
     inspect,
     mask,
     pesel_valid,
 )
 
 # Synthetic data only. 44051401359 is the textbook example PESEL.
-JAN = Member("jan", ("Jan", "Jana", "Janowi", "Janem", "Janie", "Jan Nowak", "Jana Nowaka"))
-EWA = Member("ewa", ("Ewa", "Ewy", "Ewie", "Ewę", "Ewą"))
+JAN = Member(
+    "jan", name_forms=("Jan", "Jana", "Janowi", "Janem", "Janie", "Jan Nowak", "Jana Nowaka")
+)
+EWA = Member("ewa", name_forms=("Ewa", "Ewy", "Ewie", "Ewę", "Ewą"))
 
 
 def find(text: str, quote: str, info_type: str, occurrence: int = 0) -> Finding:
@@ -160,7 +162,7 @@ def test_member_name_inside_address_stays_address():
 @pytest.mark.parametrize("count", [1, 2, 4])
 def test_placeholders_follow_household_order(count):
     names = ["Jan", "Ewa", "Zofia", "Piotr"][:count]
-    members = [Member(name.lower(), (name,)) for name in names]
+    members = [Member(name.lower(), name_forms=(name,)) for name in names]
     text = " ".join(reversed(names))
     expected = " ".join(f"OSOBA_{i}" for i in range(count, 0, -1))
     assert mask(text, [], members).masked_text == expected
@@ -168,7 +170,7 @@ def test_placeholders_follow_household_order(count):
 
 def test_name_form_shared_by_two_members_is_rejected():
     with pytest.raises(ValueError, match="more than one member"):
-        mask("", [], [Member("a", ("Nowak",)), Member("b", ("nowak",))])
+        mask("", [], [Member("a", name_forms=("Nowak",)), Member("b", name_forms=("nowak",))])
 
 
 def test_other_people_numbered_consistently_by_spelling():

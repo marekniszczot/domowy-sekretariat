@@ -34,6 +34,8 @@ from dataclasses import dataclass
 
 from google.cloud import dlp_v2
 
+from sekretariat.household import Member
+
 PERSON = "PERSON_NAME"
 ELEVEN_DIGITS = "ELEVEN_DIGIT_NUMBER"
 # RE2 (DLP) syntax: no lookarounds; \b keeps it off longer digit runs.
@@ -61,14 +63,6 @@ class Finding:
     start: int
     end: int
     info_type: str
-
-
-@dataclass(frozen=True)
-class Member:
-    """Household member: every spelling of the name that may appear in a letter."""
-
-    id: str
-    name_forms: tuple[str, ...]
 
 
 @dataclass(frozen=True)
