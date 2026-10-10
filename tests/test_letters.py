@@ -221,6 +221,7 @@ def test_strangers_get_not_found(service, action):
     "action, field, before",
     [
         (lambda s, i: s.forward(i, DOM1, "koord", confirmed=True), "owner", "dom1"),
+        (lambda s, i: s.handle(i, DOM1), "taken", None),
         (lambda s, i: s.done(i, DOM1), "state", "open"),
         (lambda s, i: s.reveal(i, DOM1), "private", True),
         (lambda s, i: s.confirm_deadline(i, DOM1), "deadline", {"date": "2026-10-23", "basis": "DELIVERY", "confirmed": False}),
@@ -283,3 +284,21 @@ def test_letter_in_progress_is_not_marked_seen(service):
     letter_id = processed(service, status="masked")
     assert service.mark_seen(letter_id, DOM1) is False
     assert "seen_by" not in service.store.get_letter(letter_id)
+
+
+def test_taking_a_letter_and_forwarding_it_again(service):
+    letter_id = processed(service, private=False)
+    service.handle(letter_id, DOM1)
+    assert service.store.get_letter(letter_id)["taken"] is True
+    service.forward(letter_id, DOM1, "koord")
+    letter = service.store.get_letter(letter_id)
+    assert (letter["owner"], letter["taken"]) == ("koord", False)
+
+
+def test_recent_action_is_only_the_users_own_and_fresh(service):
+    letter_id = processed(service, private=False)
+    assert service.recent_action(letter_id, DOM1) is None
+    service.forward(letter_id, DOM1, "koord")
+    assert service.recent_action(letter_id, DOM1) == {"cause": "FORWARD", "owner": "koord"}
+    assert service.recent_action(letter_id, KOORD) is None
+    assert service.recent_action("nope", DOM1) is None

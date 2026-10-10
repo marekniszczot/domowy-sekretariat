@@ -8,6 +8,9 @@ the `Letters` service returns for the signed-in member.
     GET /pisma/{id}/kroki         processing steps fragment, polled by htmx
     GET /pisma/{id}/strona/{n}    page photo for the greyed band (DR-1)
     GET/POST /dodaj               upload: pages, delivery date, private (DR-6, DR-7)
+    POST /pisma/{id}/<akcja>      zajme-sie, przekaz, termin, zrobione, otworz, odkryj,
+                                  cofnij; each redirects (POST-redirect-GET) and the
+                                  next page shows the „Cofnij” bar for 8 s (DR-8)
 """
 
 from dataclasses import dataclass
@@ -20,10 +23,18 @@ from fastapi import APIRouter, File, Form, Request, Response, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from sekretariat import access
 from sekretariat.access import View
 from sekretariat.auth import SESSION_COOKIE
 from sekretariat.household import Member, Role
-from sekretariat.letters import MAX_PAGES, PROCESSING, Forbidden, InvalidUpload, NotFound
+from sekretariat.letters import (
+    MAX_PAGES,
+    PROCESSING,
+    Forbidden,
+    InvalidUpload,
+    NeedsConfirmation,
+    NotFound,
+)
 from sekretariat.web import present
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -97,7 +108,12 @@ def home(request: Request):
     return render(
         request,
         "mine.html",
-        {"groups": groups, "tabs": tabs(user, open_count), "active": "mine"},
+        {
+            "groups": groups,
+            "tabs": tabs(user, open_count),
+            "active": "mine",
+            "undo": undo_bar(config, user, request.query_params.get("cofnij"), "/"),
+        },
     )
 
 
@@ -187,7 +203,14 @@ def letter_page(request: Request, letter_id: str):
     if letter.get("status") in PROCESSING:
         return render(request, "processing.html", steps_context(letter) | {"duplicate": duplicate})
     first = config.letters.mark_seen(letter_id, user)
-    context = card(letter, user, config, day, first) | {"duplicate": duplicate}
+    here = f"/pisma/{letter_id}"
+    context = card(letter, user, config, day, first) | {
+        "duplicate": duplicate,
+        "failed": request.query_params.get("blad") == "1",
+        "undo": undo_bar(
+            config, user, letter_id if "cofnij" in request.query_params else None, here
+        ),
+    }
     return render(request, "card.html", context)
 
 
@@ -272,4 +295,169 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         "quotes": [q for q in (quote("rule_trigger_quote"), quote("deadline_quote")) if q],
         "photo": f"/pisma/{letter['id']}/strona/1" if photo else None,
         "first": first,
+        "id": letter["id"],
+        **actions(letter, user, config, day),
+    }
+
+
+# Actions (part 2): POST, then redirect to the page that shows the result.
+
+_DONE_MESSAGES = {
+    "HANDLE": "Zajmiesz się tym pismem.",
+    "DONE": "Oznaczono jako zrobione.",
+    "REOPEN": "Otwarto ponownie.",
+    "REVEAL": "Pismo jest teraz jawne.",
+    "CONFIRM_DEADLINE": "Termin zatwierdzony.",
+}
+
+
+def undo_bar(config, user: Member, letter_id: str | None, back: str) -> dict | None:
+    if not letter_id:
+        return None
+    recent = config.letters.recent_action(letter_id, user)
+    if recent is None:
+        return None
+    if recent["cause"] == "FORWARD":
+        name = next((m.name for m in config.household if m.id == recent["owner"]), "")
+        message = f"Przekazano: {name}."
+    else:
+        message = _DONE_MESSAGES.get(recent["cause"], "Zapisano.")
+    return {"message": message, "action": f"/pisma/{letter_id}/cofnij", "back": back}
+
+
+def _act(request: Request, letter_id: str, action, after: str):
+    """Runs one Letters action for the signed-in user and redirects."""
+    user = signed_in(request)
+    if user is None:
+        return Response(status_code=401)
+    here = f"/pisma/{letter_id}"
+    try:
+        action(request.app.state.config.letters, user)
+    except NotFound:
+        return not_found(request)
+    except (Forbidden, NeedsConfirmation, ValueError):
+        return RedirectResponse(f"{here}?blad=1", status_code=303)
+    target = f"/?cofnij={letter_id}" if after == "list" else f"{here}?cofnij=1"
+    return RedirectResponse(target, status_code=303)
+
+
+@router.post("/pisma/{letter_id}/zajme-sie")
+def take(request: Request, letter_id: str):
+    return _act(request, letter_id, lambda letters, user: letters.handle(letter_id, user), "card")
+
+
+@router.post("/pisma/{letter_id}/przekaz")
+def forward(
+    request: Request,
+    letter_id: str,
+    target: Annotated[str, Form()],
+    confirmed: Annotated[bool, Form()] = False,
+):
+    # The sheet says the target will see the whole letter (D17), so sending the form
+    # from it is the confirmation for a private letter.
+    return _act(
+        request,
+        letter_id,
+        lambda letters, user: letters.forward(letter_id, user, target, confirmed),
+        "list",
+    )
+
+
+@router.post("/pisma/{letter_id}/termin")
+def confirm_deadline(request: Request, letter_id: str, deadline: Annotated[str, Form()] = ""):
+    try:
+        chosen = date.fromisoformat(deadline) if deadline else None
+    except ValueError:
+        return RedirectResponse(f"/pisma/{letter_id}?blad=1", status_code=303)
+    return _act(
+        request,
+        letter_id,
+        lambda letters, user: letters.confirm_deadline(letter_id, user, chosen),
+        "card",
+    )
+
+
+@router.post("/pisma/{letter_id}/zrobione")
+def done(request: Request, letter_id: str):
+    return _act(request, letter_id, lambda letters, user: letters.done(letter_id, user), "list")
+
+
+@router.post("/pisma/{letter_id}/otworz")
+def reopen(request: Request, letter_id: str):
+    return _act(request, letter_id, lambda letters, user: letters.reopen(letter_id, user), "card")
+
+
+@router.post("/pisma/{letter_id}/odkryj")
+def reveal(request: Request, letter_id: str):
+    return _act(request, letter_id, lambda letters, user: letters.reveal(letter_id, user), "card")
+
+
+@router.post("/pisma/{letter_id}/cofnij")
+def undo(request: Request, letter_id: str, back: Annotated[str, Form()] = "/"):
+    user = signed_in(request)
+    if user is None:
+        return Response(status_code=401)
+    if not back.startswith("/") or back.startswith("//"):
+        back = "/"
+    try:
+        request.app.state.config.letters.undo(letter_id, user)
+    except Forbidden:
+        pass  # too late or already undone: just show the page as it is
+    return RedirectResponse(back, status_code=303)
+
+
+def actions(letter: dict, user: Member, config, day: date) -> dict:
+    """Which buttons the card shows; the same rules guard the POST routes."""
+    household = config.household
+    is_open = letter.get("state") == "open"
+    can_act = access.can_act(letter, user)
+    can_close = access.can_close(letter, user)
+    nothing_to_do = letter.get("verdict") == "NONE"
+    owns = letter.get("owner") == user.id
+    primary = None
+    if is_open and can_close and (nothing_to_do or (owns and letter.get("taken"))):
+        primary = "done"
+    elif can_act:
+        primary = "take"
+
+    sheet = None
+    if can_act:
+        rules = config.letters.store.rules()
+        suggestion = access.forward_suggestion(letter, household, rules, user)
+        rule_id = (letter.get("analysis") or {}).get("rule_id")
+        rule = next((r for r in rules if r.id == rule_id), None)
+        why = "prowadzi domowy sekretariat"
+        if suggestion and rule and f"OSOBA_{household.index(suggestion) + 1}" in rule.text:
+            why = present.with_names(rule.text, household)
+        others = [m for m in access.forward_targets(household, user) if m != suggestion]
+        sheet = {
+            "suggestion": suggestion,
+            "why": why,
+            "others": others,
+            "private": bool(letter.get("private")),
+        }
+
+    deadline = None
+    due = present.deadline_date(letter)
+    if (
+        due
+        and not (letter.get("deadline") or {}).get("confirmed")
+        and access.can_confirm_deadline(letter, user)
+    ):
+        spans = letter.get("quote_spans_raw") or {}
+        span = spans.get("deadline_quote")
+        raw = letter.get("raw_text") or ""
+        deadline = {
+            "date": due.isoformat(),
+            "short": present.short_date(due),
+            "quote": present.quote_context(raw, tuple(span)) if span and raw else None,
+        }
+    coordinator = next((m for m in household if m.role == Role.KOORDYNATOR), None)
+    return {
+        "primary": primary,
+        "sheet": sheet,
+        "reopen": not is_open and can_close,
+        "reveal": access.can_reveal(letter, user) and is_open,
+        "coordinator": coordinator.name if coordinator else "",
+        "deadline": deadline,
     }

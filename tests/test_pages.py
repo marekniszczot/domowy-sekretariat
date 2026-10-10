@@ -273,3 +273,127 @@ def test_duplicate_upload_opens_the_existing_letter(app, store):
 
 def test_upload_needs_sign_in(app, store):
     assert post_upload(as_member(app, None)).status_code == 401
+
+
+# Actions (DR-8, DR-16, DR-7)
+
+
+def test_card_offers_take_and_forward_with_a_suggestion_from_the_rules(app, store):
+    letter_id = verdict_letter(store, owner="koord", addressee="koord", uploaded_by="koord")
+    page = as_member(app, KOORD).get(f"/pisma/{letter_id}").text
+    assert "Zajmę się tym" in page and 'popovertarget="forward-sheet"' in page
+    # R1 names OSOBA_1 (Ala): one tap, with the rule as the reason
+    assert '<span class="n">Ala</span><span class="why">bo: Rachunki ogarnia Ala.</span>' in page
+    assert ">Ula</button>" in page and ">Olek</button>" not in page  # not to oneself
+    assert page.count('id="forward-sheet"') == 1
+    title = page[page.index("<title>") : page.index("</title>")]
+    assert "popover" not in title and page.index("</head>") < page.index('id="forward-sheet"')
+
+
+def test_take_then_done_then_undo(app, store):
+    letter_id = verdict_letter(store)
+    http = as_member(app, DOM1)
+    response = http.post(f"/pisma/{letter_id}/zajme-sie")
+    assert response.headers["location"] == f"/pisma/{letter_id}?cofnij=1"
+    page = http.get(response.headers["location"]).text
+    assert "Zajmiesz się tym pismem." in page and ">Zrobione</button>" in page
+
+    response = http.post(f"/pisma/{letter_id}/zrobione")
+    assert response.headers["location"] == f"/?cofnij={letter_id}"
+    page = http.get(response.headers["location"]).text
+    assert "Oznaczono jako zrobione." in page and f'action="/pisma/{letter_id}/cofnij"' in page
+
+    response = http.post(f"/pisma/{letter_id}/cofnij", data={"back": "/"})
+    assert response.headers["location"] == "/"
+    assert store.get_letter(letter_id)["state"] == "open"
+
+
+def test_nothing_to_do_letter_is_closed_directly(app, store):
+    letter_id = verdict_letter(store, verdict="NONE", deadline=None)
+    page = as_member(app, DOM1).get(f"/pisma/{letter_id}").text
+    assert ">Zrobione</button>" in page and "Zajmę się tym" not in page
+
+
+def test_forward_moves_the_letter_and_offers_undo_on_the_list(app, store):
+    letter_id = verdict_letter(store, private=True)
+    http = as_member(app, DOM1)
+    page = http.get(f"/pisma/{letter_id}").text
+    assert "zobaczy całą treść tego pisma." in page
+    response = http.post(
+        f"/pisma/{letter_id}/przekaz", data={"target": "koord", "confirmed": "true"}
+    )
+    assert response.headers["location"] == f"/?cofnij={letter_id}"
+    assert store.get_letter(letter_id)["owner"] == "koord"
+    assert "Przekazano: Olek." in http.get(response.headers["location"]).text
+
+
+def test_failed_action_says_so_on_the_card(app, store):
+    letter_id = verdict_letter(store, private=True)
+    http = as_member(app, DOM1)
+    response = http.post(f"/pisma/{letter_id}/przekaz", data={"target": "koord"})  # not confirmed
+    assert response.headers["location"] == f"/pisma/{letter_id}?blad=1"
+    assert "Nie udało się. Spróbuj ponownie." in http.get(response.headers["location"]).text
+    assert store.get_letter(letter_id)["owner"] == "dom1"
+
+
+def test_strangers_cannot_act(app, store):
+    letter_id = verdict_letter(store)
+    assert as_member(app, DOM2).post(f"/pisma/{letter_id}/zrobione").status_code == 404
+    assert as_member(app, None).post(f"/pisma/{letter_id}/zrobione").status_code == 401
+    assert store.get_letter(letter_id)["state"] == "open"
+
+
+def test_unconfirmed_deadline_is_checked_against_the_quote(app, store):
+    letter_id = verdict_letter(
+        store, deadline={"date": iso(9), "basis": "DELIVERY", "confirmed": False}
+    )
+    http = as_member(app, DOM1)
+    page = http.get(f"/pisma/{letter_id}").text
+    assert 'popovertarget="deadline-sheet"' in page and "<mark>do dnia 20.10.</mark>" in page
+    response = http.post(f"/pisma/{letter_id}/termin", data={"deadline": iso(11)})
+    assert response.headers["location"] == f"/pisma/{letter_id}?cofnij=1"
+    assert store.get_letter(letter_id)["deadline"] == {
+        "date": iso(11),
+        "basis": "DELIVERY",
+        "confirmed": True,
+    }
+    assert 'popovertarget="deadline-sheet"' not in http.get(f"/pisma/{letter_id}").text
+
+
+def test_invalid_deadline_is_refused(app, store):
+    letter_id = verdict_letter(
+        store, deadline={"date": iso(9), "basis": "DELIVERY", "confirmed": False}
+    )
+    response = as_member(app, DOM1).post(f"/pisma/{letter_id}/termin", data={"deadline": "jutro"})
+    assert response.headers["location"].endswith("?blad=1")
+    assert store.get_letter(letter_id)["deadline"]["confirmed"] is False
+
+
+def test_private_letter_can_be_revealed_by_its_addressee(app, store):
+    letter_id = verdict_letter(store, private=True)
+    http = as_member(app, DOM1)
+    assert "Odkryj dla: Olek" in http.get(f"/pisma/{letter_id}").text
+    http.post(f"/pisma/{letter_id}/odkryj")
+    assert store.get_letter(letter_id)["private"] is False
+    assert "Rachunek za prąd" in as_member(app, KOORD).get(f"/pisma/{letter_id}").text
+
+
+def test_closed_letter_can_be_reopened(app, store):
+    letter_id = verdict_letter(store, state="closed")
+    http = as_member(app, DOM1)
+    assert "Otwórz ponownie" in http.get(f"/pisma/{letter_id}").text
+    http.post(f"/pisma/{letter_id}/otworz")
+    assert store.get_letter(letter_id)["state"] == "open"
+
+
+@pytest.mark.parametrize("back", ["https://evil.example.com", "//evil.example.com"])
+def test_undo_only_returns_to_our_own_pages(app, store, back):
+    letter_id = verdict_letter(store)
+    http = as_member(app, DOM1)
+    http.post(f"/pisma/{letter_id}/zrobione")
+    assert http.post(f"/pisma/{letter_id}/cofnij", data={"back": back}).headers["location"] == "/"
+
+
+def test_fonts_are_served_as_woff2(app):
+    response = as_member(app, None).get("/static/fonts/bricolage-latin.woff2")
+    assert response.headers["content-type"] == "font/woff2"

@@ -2,6 +2,8 @@
 
 Every action records an event (metric source) and keeps `last_action` on the
 letter with the fields as they were, so „Cofnij” (DR-8) restores exactly that.
+`taken` says the current owner clicked „Zajmę się tym”; forwarding clears it, so
+the new owner decides for themselves.
 A letter the user may not see raises NotFound, so its existence never leaks.
 """
 
@@ -30,7 +32,7 @@ UNDO_WINDOW = timedelta(seconds=60)  # the UI offers 8 s; the rest absorbs laten
 PROCESSING = {"received", "ocr_done", "masked"}
 FINISHED = {"verdict", "failed", "unreadable"}
 METADATA_FIELDS = ("status", "deadline", "owner", "state", "private", "created_at")
-UNDOABLE = ("owner", "state", "private", "deadline")
+UNDOABLE = ("owner", "state", "private", "deadline", "taken")
 
 
 class NotFound(Exception):
@@ -166,7 +168,8 @@ class Letters:
         """„Zajmę się tym”."""
         letter = self._letter(letter_id, user, access.can_act)
         event = act(self.household, letter["owner"], Cause.HANDLE, user.id)
-        self._apply(letter_id, letter, user, Cause.HANDLE.value, {"owner": event.owner})
+        changes = {"owner": event.owner, "taken": True}
+        self._apply(letter_id, letter, user, Cause.HANDLE.value, changes)
 
     def forward(self, letter_id: str, user: Member, target: str, confirmed: bool = False) -> None:
         """„Przekaż”."""
@@ -174,7 +177,8 @@ class Letters:
         if letter.get("private") and not confirmed:
             raise NeedsConfirmation(target)
         event = act(self.household, letter["owner"], Cause.FORWARD, user.id, target)
-        self._apply(letter_id, letter, user, Cause.FORWARD.value, {"owner": event.owner})
+        changes = {"owner": event.owner, "taken": False}
+        self._apply(letter_id, letter, user, Cause.FORWARD.value, changes)
 
     def confirm_deadline(self, letter_id: str, user: Member, deadline: date | None = None) -> None:
         letter = self._letter(letter_id, user, access.can_confirm_deadline)
@@ -196,11 +200,21 @@ class Letters:
         letter = self._letter(letter_id, user, access.can_reveal)
         self._apply(letter_id, letter, user, "REVEAL", {"private": False})
 
-    def undo(self, letter_id: str, user: Member) -> None:
+    def recent_action(self, letter_id: str, user: Member) -> dict | None:
+        """The user's own action that „Cofnij” can still undo: {cause, owner}.
+
+        No view check: after forwarding, the user may no longer see the letter but
+        still undoes their own click. Only the owner they chose is revealed."""
         letter = self.store.get_letter(letter_id)
         last = (letter or {}).get("last_action")
         if not last or last["actor"] != user.id or now() - last["at"] > UNDO_WINDOW:
+            return None
+        return {"cause": last["cause"], "owner": letter.get("owner")}
+
+    def undo(self, letter_id: str, user: Member) -> None:
+        if self.recent_action(letter_id, user) is None:
             raise Forbidden("nothing to undo")
+        last = self.store.get_letter(letter_id)["last_action"]
         self.store.update_letter(letter_id, {**last["before"], "last_action": None})
         self.store.add_event(
             letter_id, {"cause": "UNDO", "undoes": last["cause"], "actor": user.id}

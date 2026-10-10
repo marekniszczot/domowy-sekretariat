@@ -10,6 +10,7 @@ Browser POSTs must come from our own origin (CSRF, on top of SameSite=Lax), exce
 
 import hmac
 import logging
+import mimetypes
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,6 +34,7 @@ from sekretariat.letters import Letters
 log = logging.getLogger(__name__)
 
 STATIC = Path(__file__).resolve().parent.parent / "web" / "static"
+mimetypes.add_type("font/woff2", ".woff2")  # the slim image has no /etc/mime.types
 CROSS_ORIGIN_POSTS = {"/auth/google"}
 
 

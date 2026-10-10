@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% from "_row.html" import letter_row %}
 {% block title %}Moje pisma · Domowy Sekretariat{% endblock %}
+{% block head %}<script src="/static/app.js" defer></script>{% endblock %}
 {% block content %}
 <h1 class="title">Moje pisma</h1>
 {% for title, rows in groups %}
@@ -13,4 +14,5 @@
 <p class="muted">Dostajesz pismo z banku, urzędu albo od dostawcy prądu? Zrób mu zdjęcie, a powiem, o co chodzi i czy musisz coś zrobić.</p>
 <a class="btn primary big" href="/dodaj">Zrób zdjęcie pisma</a>
 {% endfor %}
+{% include "_undo.html" %}
 {% endblock %}

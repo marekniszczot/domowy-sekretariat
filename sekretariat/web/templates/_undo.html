@@ -1,0 +1,7 @@
+{% if undo %}
+<form class="undo-bar" method="post" action="{{ undo.action }}" role="status" data-undo>
+  <input type="hidden" name="back" value="{{ undo.back }}">
+  <span>{{ undo.message }}</span>
+  <button type="submit">Cofnij</button>
+</form>
+{% endif %}
