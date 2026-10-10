@@ -107,7 +107,9 @@ def probe_gemini(client: Client, models: list[str]) -> list[dict]:
                 "POST",
                 url,
                 {
-                    "contents": [{"role": "user", "parts": [{"text": "Odpowiedz jednym słowem: OK"}]}],
+                    "contents": [
+                        {"role": "user", "parts": [{"text": "Odpowiedz jednym słowem: OK"}]}
+                    ],
                     "generationConfig": {"maxOutputTokens": 256},
                 },
             )
@@ -138,7 +140,10 @@ def probe_dlp(client: Client) -> dict:
         },
     )
     if status != 200:
-        return {"polish": polish, "error": f"inspect {status}: {body.get('error', {}).get('message')}"}
+        return {
+            "polish": polish,
+            "error": f"inspect {status}: {body.get('error', {}).get('message')}",
+        }
     findings = {}
     for finding in body.get("result", {}).get("findings", []):
         name = finding["infoType"]["name"]
@@ -146,7 +151,9 @@ def probe_dlp(client: Client) -> dict:
 
     return {
         "polish": polish,
-        "expected": {n: ("available" if n in available else "missing") for n in EXPECTED_INFO_TYPES},
+        "expected": {
+            n: ("available" if n in available else "missing") for n in EXPECTED_INFO_TYPES
+        },
         "findings": findings,
     }
 
