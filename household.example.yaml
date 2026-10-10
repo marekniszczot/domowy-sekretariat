@@ -1,0 +1,28 @@
+# Fictional household. Copy to household.yaml (ignored by git) and fill in your own.
+#
+# Order matters: the n-th member becomes OSOBA_n in everything sent to the model.
+# role: koordynator (sees and configures everything), domownik (has an account),
+#       bez_konta (no account; masked and covered by rules, reminders go to the koordynator).
+# emails: any of them may sign in; reminders go to the first one. Optional for bez_konta.
+# first_name_forms / surname_forms: every spelling that may appear in a letter,
+#       inflected forms included. Matched as whole words, case-insensitive. Masking
+#       combines them in both orders ("Jan Przykładowy", "Przykładowy, Jan"), so do
+#       not list combinations. A surname shared by several members is allowed: alone
+#       it becomes OSOBA_DOMU. First name forms must be unique across the household.
+members:
+  - id: ewa
+    role: domownik
+    emails: [ewa@example.com]
+    first_name_forms: [Ewa, Ewy, Ewie, Ewę, Ewą, Ewo]
+    surname_forms: [Przykładowa, Przykładowej, Przykładową]
+
+  - id: jan
+    role: koordynator
+    emails: [jan@example.com, jan.drugi@example.com]
+    first_name_forms: [Jan, Jana, Janowi, Janem, Janie]
+    surname_forms: [Przykładowy, Przykładowego, Przykładowemu, Przykładowym]
+
+  - id: zofia
+    role: bez_konta
+    first_name_forms: [Zofia, Zofii, Zofię, Zofią, Zofio]
+    surname_forms: [Wzorcowa, Wzorcowej, Wzorcową]

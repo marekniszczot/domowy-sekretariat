@@ -23,6 +23,7 @@ HOUSE = [RODZIC, KOORD, SENIOR, DZIECKO]
         ("INNA_1", "koord"),
         ("INNA", "koord"),
         ("NIEZNANY", "koord"),
+        ("OSOBA_DOMU", "koord"),  # family name only: not known who
         (None, "koord"),  # analysis failed
     ],
 )

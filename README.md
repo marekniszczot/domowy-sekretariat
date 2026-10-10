@@ -4,6 +4,18 @@ Aplikacja, która ze zdjęcia pisma urzędowego robi werdykt według domowego re
 
 Pełny opis projektu powstaje. Infrastruktura jest opisana w [`infra/README.md`](infra/README.md).
 
+## Konfiguracja domu
+
+Imiona, formy imion, role i adresy e-mail domowników nigdy nie trafiają do repozytorium. Format opisuje [`household.example.yaml`](household.example.yaml).
+
+```sh
+cp household.example.yaml household.yaml           # plik jest w .gitignore
+uv run pre-commit install                          # hook blokuje dane domu w commitach
+GCLOUD_CONFIGURATION=<config> scripts/upload_household.sh <project-id>
+```
+
+Lokalnie aplikacja czyta `HOUSEHOLD_FILE=household.yaml`, a na Cloud Run sekret `HOUSEHOLD_SECRET=projects/<project-id>/secrets/household-config`. Hook pre-commit blokuje plik `household.yaml`, każdą formę imienia i e-mail z niego oraz ciągi z lokalnego pliku `.forbidden-strings` (np. nazwisko, ulica, domena).
+
 ## Sondy dostępności
 
 Skrypt [`scripts/probes.py`](scripts/probes.py) sprawdza, które modele Gemini odpowiadają w których lokalizacjach Vertex AI, oraz czy Sensitive Data Protection (DLP) wykrywa polskie dane osobowe w syntetycznym piśmie.

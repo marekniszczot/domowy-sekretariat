@@ -23,6 +23,13 @@ Overlapping findings form one group, replaced as a whole:
      appearance ("OSOBA_1" or "OSOBA_2, OSOBA_1");
   3. otherwise another person -> INNA_n, numbered per letter by spelling.
 
+Household names are found without DLP, only when each word starts with a capital
+letter (a form may also be a common word: "Wilk" vs "wilk"). First names and surnames are configured
+separately and matched in both orders ("Jan Nowak", "Nowak Jan", "Nowak, Jan",
+also across a line break) -> the first name's owner. A surname alone belongs to
+its member when only one member has it; a surname shared by several members
+(the family name) becomes OSOBA_DOMU, a household member without knowing who.
+
 PESEL: the built-in DLP detector only fires next to the word "PESEL" and on exact
 digits, so every 11-digit number (also split by spaces or dashes) is a custom
 finding. A valid checksum gives [PESEL], an invalid one [NUMER], so an OCR digit
@@ -95,8 +102,12 @@ def pesel_valid(digits: str) -> bool:
     return (10 - total % 10) % 10 == int(digits[10])
 
 
+HOUSEHOLD = -1  # member index of a surname shared by several members
+HOUSEHOLD_PLACEHOLDER = "OSOBA_DOMU"
+
+
 def member_placeholder(index: int) -> str:
-    return f"OSOBA_{index + 1}"
+    return HOUSEHOLD_PLACEHOLDER if index == HOUSEHOLD else f"OSOBA_{index + 1}"
 
 
 def mask(raw_text: str, findings: list[Finding], members: list[Member]) -> MaskResult:
@@ -172,24 +183,61 @@ def _label(raw_text: str, finding: Finding) -> str:
 
 
 def _member_spans(raw_text: str, members: list[Member]) -> list[_Span]:
-    owner: dict[str, int] = {}
+    first_owner: dict[str, int] = {}
+    surname_owners: dict[str, set[int]] = {}
     for index, member in enumerate(members):
-        for form in member.name_forms:
-            key = form.casefold()
-            if owner.setdefault(key, index) != index:
-                raise ValueError(f"name form {form!r} belongs to more than one member")
-    if not owner:
+        for form in member.first_name_forms:
+            if first_owner.setdefault(_key(form), index) != index:
+                raise ValueError("a first name form belongs to more than one member")
+        for form in member.surname_forms:
+            surname_owners.setdefault(_key(form), set()).add(index)
+    if set(first_owner) & set(surname_owners):
+        raise ValueError("a form is both a first name and a surname")
+    if not first_owner and not surname_owners:
         return []
 
-    # Longest first, so "Jana Nowaka" wins over "Jana"; spaces match OCR line breaks.
-    alternatives = (
-        re.escape(form).replace(r"\ ", r"\s+") for form in sorted(owner, key=len, reverse=True)
-    )
-    pattern = re.compile(r"(?<!\w)(?:" + "|".join(alternatives) + r")(?!\w)", re.IGNORECASE)
-    return [
-        _Span(m.start(), m.end(), PERSON, owner[" ".join(m.group().split()).casefold()])
-        for m in pattern.finditer(raw_text)
-    ]
+    first = _alternatives(first_owner)
+    surname = _alternatives(surname_owners)
+    sep = r"(?:\s*,\s*|\s+)"
+    options = []
+    if first_owner and surname_owners:
+        options += [rf"(?P<f1>{first}){sep}{surname}", rf"{surname}{sep}(?P<f2>{first})"]
+    if first_owner:
+        options.append(rf"(?P<f3>{first})")
+    if surname_owners:
+        options.append(rf"(?P<s>{surname})")
+    pattern = re.compile(r"(?<!\w)(?:" + "|".join(options) + r")(?!\w)")
+
+    spans = []
+    for match in pattern.finditer(raw_text):
+        groups = match.groupdict()
+        first_name = groups.get("f1") or groups.get("f2") or groups.get("f3")
+        if first_name:
+            index = first_owner[_key(first_name)]
+        else:
+            owners = surname_owners[_key(groups["s"])]
+            index = next(iter(owners)) if len(owners) == 1 else HOUSEHOLD
+        spans.append(_Span(match.start(), match.end(), PERSON, index))
+    return spans
+
+
+def _key(form: str) -> str:
+    return " ".join(form.split()).casefold()
+
+
+def _alternatives(forms) -> str:
+    # Longest first, so "Maria Teresa" wins over "Maria".
+    return "(?:" + "|".join(name_pattern(f) for f in sorted(forms, key=len, reverse=True)) + ")"
+
+
+def name_pattern(form: str) -> str:
+    """Each word must start with a capital letter, the rest may be any case:
+    "Wilk" matches "Wilk" and "WILK" but not the noun "wilk"."""
+    words = []
+    for word in form.split():
+        rest = f"(?i:{re.escape(word[1:])})" if len(word) > 1 else ""
+        words.append(re.escape(word[0].upper()) + rest)
+    return r"\s+".join(words)  # whitespace also matches OCR line breaks
 
 
 def _overlap_groups(spans: list[_Span]) -> list[list[_Span]]:
@@ -211,6 +259,8 @@ def _replacement(surface: str, group: list[_Span], other_people: dict[str, str])
         return f"[{min(labels, key=_PRIORITY.index)}]"
 
     members = dict.fromkeys(s.member for s in group if s.member is not None)
+    if len(members) > 1:
+        members.pop(HOUSEHOLD, None)  # the named members say who it is
     if members:
         return ", ".join(member_placeholder(index) for index in members)
 

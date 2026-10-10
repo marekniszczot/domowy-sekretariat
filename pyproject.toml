@@ -5,12 +5,15 @@ description = "Domowy Sekretariat: triage of official letters by household rules
 requires-python = ">=3.13"
 dependencies = [
     "google-cloud-dlp>=3.40",
+    "google-cloud-secret-manager>=2.31",
     "google-genai>=2.29",
     "pydantic>=2.14",
+    "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
 dev = [
+    "pre-commit>=4.6",
     "pytest>=9.1",
     "ruff>=0.17",
 ]

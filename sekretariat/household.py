@@ -14,10 +14,17 @@ class Member:
 
     id: str
     role: Role = Role.DOMOWNIK
-    # Every spelling of the name that may appear in a letter (inflected forms too).
-    name_forms: tuple[str, ...] = ()
-    email: str | None = None
+    # Every spelling that may appear in a letter, inflected forms included.
+    # Masking combines first names and surnames in both orders.
+    first_name_forms: tuple[str, ...] = ()
+    surname_forms: tuple[str, ...] = ()
+    # Any of them may sign in; reminders go to the first one.
+    emails: tuple[str, ...] = ()
 
     @property
     def has_account(self) -> bool:
         return self.role != Role.BEZ_KONTA
+
+    @property
+    def notify_email(self) -> str | None:
+        return self.emails[0] if self.emails else None

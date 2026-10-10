@@ -1,0 +1,7 @@
+repos:
+  - repo: local
+    hooks:
+      - id: private-data
+        name: block household data
+        entry: uv run --quiet python scripts/check_private_data.py
+        language: system

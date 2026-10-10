@@ -57,6 +57,12 @@ def test_valid_response_is_parsed():
     assert result.verdict == Verdict.NONE
 
 
+@pytest.mark.parametrize("addressee", ["OSOBA_1", "OSOBA_DOMU", "INNA", "INNA_3", "NIEZNANY"])
+def test_allowed_addressees(addressee):
+    result = analyze(fake_client(json.dumps(VALID | {"addressee": addressee})), "pismo", RULES)
+    assert isinstance(result, LetterAnalysis)
+
+
 def test_request_uses_structured_output_and_temperature_zero():
     client = fake_client(json.dumps(VALID))
     analyze(client, "pismo", RULES)

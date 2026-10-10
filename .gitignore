@@ -12,3 +12,7 @@ __pycache__/
 .venv/
 .pytest_cache/
 .ruff_cache/
+
+# Household data (D11): local only
+household.yaml
+.forbidden-strings

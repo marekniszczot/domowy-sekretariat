@@ -18,9 +18,13 @@ from sekretariat.mask import (
 
 # Synthetic data only. 44051401359 is the textbook example PESEL.
 JAN = Member(
-    "jan", name_forms=("Jan", "Jana", "Janowi", "Janem", "Janie", "Jan Nowak", "Jana Nowaka")
+    "jan",
+    first_name_forms=("Jan", "Jana", "Janowi", "Janem", "Janie"),
+    surname_forms=("Nowak", "Nowaka", "Nowakowi"),
 )
-EWA = Member("ewa", name_forms=("Ewa", "Ewy", "Ewie", "Ewę", "Ewą"))
+# "Nowak" is the family name shared with JAN; "Nowaka" and "Nowakowi" are only his.
+EWA = Member("ewa", first_name_forms=("Ewa", "Ewy", "Ewie", "Ewę", "Ewą"), surname_forms=("Nowak",))
+ZOFIA = Member("zofia", first_name_forms=("Zofia",), surname_forms=("Wzorcowa", "Wzorcowej"))
 
 
 def find(text: str, quote: str, info_type: str, occurrence: int = 0) -> Finding:
@@ -138,7 +142,47 @@ def test_member_forms_without_dlp(text, expected):
 
 
 def test_member_form_is_whole_word_only():
-    assert mask("Janowiec, Ewangelia", [], [JAN, EWA]).masked_text == "Janowiec, Ewangelia"
+    text = "Janowiec, Ewangelia, Nowakowski"
+    assert mask(text, [], [JAN, EWA]).masked_text == text
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("Nowak Jan", "OSOBA_1"),
+        ("Nowak, Jan", "OSOBA_1"),
+        ("NOWAKA JANA", "OSOBA_1"),
+        ("Nowak\nJan", "OSOBA_1"),
+        ("Ewa Nowak i Jan Nowak", "OSOBA_2 i OSOBA_1"),
+        ("Nowak, Ewa", "OSOBA_2"),
+        ("Pan Nowakowi", "Pan OSOBA_1"),  # surname form only Jan has
+        ("Pani Wzorcowej", "Pani OSOBA_3"),  # surname of one member
+        ("Państwo Nowak", "Państwo OSOBA_DOMU"),  # family name: not known who
+    ],
+)
+def test_first_names_and_surnames_in_any_order(text, expected):
+    assert mask(text, [], [JAN, EWA, ZOFIA]).masked_text == expected
+
+
+def test_lowercase_common_word_is_not_a_name():
+    # A name form may also be a word: "Róża" (a name) vs "róża" (a rose).
+    member = Member("m", first_name_forms=("Róża", "Róży"), surname_forms=("Wilk",))
+    text = "Nie płać róży nie dzwoń; wilk syty. Pani Róży Wilk, RÓŻY WILK."
+    assert mask(text, [], [member]).masked_text == (
+        "Nie płać róży nie dzwoń; wilk syty. Pani OSOBA_1, OSOBA_1."
+    )
+
+
+def test_named_member_wins_over_family_name_in_one_group():
+    text = "Jan oraz Nowak"
+    findings = [find(text, "Jan oraz Nowak", PERSON)]
+    assert mask(text, findings, [JAN, EWA]).masked_text == "OSOBA_1"
+
+
+def test_family_name_alone_in_dlp_span():
+    text = "Szanowni Państwo Nowak"
+    findings = [find(text, "Państwo Nowak", PERSON)]
+    assert mask(text, findings, [JAN, EWA]).masked_text == "Szanowni OSOBA_DOMU"
 
 
 def test_dlp_person_containing_member_becomes_member():
@@ -162,15 +206,26 @@ def test_member_name_inside_address_stays_address():
 @pytest.mark.parametrize("count", [1, 2, 4])
 def test_placeholders_follow_household_order(count):
     names = ["Jan", "Ewa", "Zofia", "Piotr"][:count]
-    members = [Member(name.lower(), name_forms=(name,)) for name in names]
+    members = [Member(name.lower(), first_name_forms=(name,)) for name in names]
     text = " ".join(reversed(names))
     expected = " ".join(f"OSOBA_{i}" for i in range(count, 0, -1))
     assert mask(text, [], members).masked_text == expected
 
 
-def test_name_form_shared_by_two_members_is_rejected():
+def test_first_name_form_shared_by_two_members_is_rejected():
     with pytest.raises(ValueError, match="more than one member"):
-        mask("", [], [Member("a", name_forms=("Nowak",)), Member("b", name_forms=("nowak",))])
+        mask(
+            "", [], [Member("a", first_name_forms=("Ola",)), Member("b", first_name_forms=("ola",))]
+        )
+
+
+def test_form_used_as_first_name_and_surname_is_rejected():
+    with pytest.raises(ValueError, match="both a first name and a surname"):
+        mask(
+            "",
+            [],
+            [Member("a", first_name_forms=("Paweł",)), Member("b", surname_forms=("Paweł",))],
+        )
 
 
 def test_other_people_numbered_consistently_by_spelling():
