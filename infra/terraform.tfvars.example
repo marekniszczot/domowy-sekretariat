@@ -1,0 +1,9 @@
+project_id         = "your-project-id"
+billing_account_id = "XXXXXX-XXXXXX-XXXXXX"
+github_repository  = "your-github-user/domowy-sekretariat"
+github_owner_id    = "123456789"
+
+# Optional overrides
+# region          = "europe-central2"
+# budget_amount   = 200
+# budget_currency = "PLN"
