@@ -3,6 +3,7 @@
 {% block content %}
 <a class="back" href="/">‹ Moje pisma</a>
 <h1 class="title">Czytam pismo</h1>
+{% if duplicate %}<p class="notice"><span class="i t-todo" aria-hidden="true">●</span><span>To pismo już jest. Pokazuję je zamiast dodawać drugi raz.</span></p>{% endif %}
 {% include "_steps.html" %}
 <p class="muted">Zwykle trwa to kilkanaście sekund. Możesz zamknąć, dam znać w „Moich pismach”.</p>
 <a class="btn" href="/">Zamknij</a>

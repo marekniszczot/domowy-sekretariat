@@ -7,20 +7,23 @@ the `Letters` service returns for the signed-in member.
     GET /pisma/{id}               verdict card, processing steps or metadata (DR-5)
     GET /pisma/{id}/kroki         processing steps fragment, polled by htmx
     GET /pisma/{id}/strona/{n}    page photo for the greyed band (DR-1)
+    GET/POST /dodaj               upload: pages, delivery date, private (DR-6, DR-7)
 """
 
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, File, Form, Request, Response, UploadFile
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from sekretariat.access import View
 from sekretariat.auth import SESSION_COOKIE
-from sekretariat.household import Member
-from sekretariat.letters import PROCESSING, Forbidden, NotFound
+from sekretariat.household import Member, Role
+from sekretariat.letters import MAX_PAGES, PROCESSING, Forbidden, InvalidUpload, NotFound
 from sekretariat.web import present
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -29,6 +32,7 @@ router = APIRouter()
 HOME_ZONE = ZoneInfo("Europe/Warsaw")
 STEPS = ["Czytam pismo", "Ukrywam dane osobowe", "Sprawdzam Wasze zasady"]
 _STEP_OF_STATUS = {"received": 0, "ocr_done": 1, "masked": 2}
+STOP_POLLING = 286  # htmx stops an `every` trigger on this status
 
 
 @dataclass(frozen=True)
@@ -42,6 +46,7 @@ class Tab:
 def tabs(user: Member, open_count: int = 0) -> list[Tab]:
     """DR-2. A bar with a single tab is not shown."""
     return [
+        Tab("add", "Dodaj pismo", "/dodaj"),
         Tab("mine", "Moje pisma", "/", open_count),
     ]
 
@@ -96,6 +101,65 @@ def home(request: Request):
     )
 
 
+@router.get("/dodaj")
+def upload_form(request: Request):
+    user = signed_in(request)
+    if user is None:
+        return login_page(request)
+    return upload_page(request, user)
+
+
+@router.post("/dodaj")
+def upload(
+    request: Request,
+    pages: Annotated[list[UploadFile], File()],
+    when: Annotated[str, Form()] = "today",
+    delivery_date: Annotated[str, Form()] = "",
+    private: Annotated[bool, Form()] = False,
+):
+    user = signed_in(request)
+    if user is None:
+        return Response(status_code=401)
+    day = today()
+    delivered = {"today": day, "yesterday": day - timedelta(days=1)}.get(when)
+    if when == "earlier":
+        try:
+            delivered = date.fromisoformat(delivery_date)
+        except ValueError:
+            delivered = None
+        if delivered is not None and delivered > day:
+            delivered = None
+    if delivered is None:
+        return upload_page(request, user, "Wybierz, kiedy przyszło pismo.", 400)
+    files = [(page.file.read(), page.content_type or "") for page in pages if page.filename]
+    try:
+        result = request.app.state.config.letters.upload(user, files, delivered, private)
+    except InvalidUpload:
+        message = (
+            f"Nie mogę przyjąć tych plików. Dodaj od 1 do {MAX_PAGES} zdjęć albo plików PDF, "
+            "każdy do 15 MB."
+        )
+        return upload_page(request, user, message, 400)
+    query = "?duplikat=1" if result.duplicate else ""
+    return RedirectResponse(f"/pisma/{result.letter_id}{query}", status_code=303)
+
+
+def upload_page(request: Request, user: Member, error: str = "", status_code: int = 200):
+    return render(
+        request,
+        "upload.html",
+        {
+            "error": error,
+            "max_pages": MAX_PAGES,
+            "today": today().isoformat(),
+            "can_be_private": user.role != Role.KOORDYNATOR,
+            "tabs": tabs(user),
+            "active": "add",
+        },
+        status_code,
+    )
+
+
 @router.get("/pisma/{letter_id}")
 def letter_page(request: Request, letter_id: str):
     user = signed_in(request)
@@ -119,21 +183,23 @@ def letter_page(request: Request, letter_id: str):
                 "when": present.when_line(letter, day) if due else "bez terminu",
             },
         )
+    duplicate = request.query_params.get("duplikat") == "1"
     if letter.get("status") in PROCESSING:
-        return render(request, "processing.html", steps_context(letter))
+        return render(request, "processing.html", steps_context(letter) | {"duplicate": duplicate})
     first = config.letters.mark_seen(letter_id, user)
-    return render(request, "card.html", card(letter, user, config, day, first))
+    context = card(letter, user, config, day, first) | {"duplicate": duplicate}
+    return render(request, "card.html", context)
 
 
 @router.get("/pisma/{letter_id}/kroki")
 def letter_steps(request: Request, letter_id: str):
     user = signed_in(request)
     if user is None:
-        return Response(status_code=401)
+        return Response(status_code=STOP_POLLING)
     try:
         letter, _ = request.app.state.config.letters.get(letter_id, user)
     except NotFound:
-        return Response(status_code=404)
+        return Response(status_code=STOP_POLLING)
     if letter.get("status") not in PROCESSING:
         return Response(headers={"HX-Redirect": f"/pisma/{letter_id}"})
     return render(request, "_steps.html", steps_context(letter))

@@ -2,6 +2,7 @@
 {% block title %}{{ sender }} · Domowy Sekretariat{% endblock %}
 {% block content %}
 <a class="back" href="/">‹ Moje pisma</a>
+{% if duplicate %}<p class="notice"><span class="i t-todo" aria-hidden="true">●</span><span>To pismo już jest. Pokazuję je zamiast dodawać drugi raz.</span></p>{% endif %}
 <div class="paper{% if first %} jolt{% endif %}">
   <div class="letter-band">
     {% if photo %}<img src="{{ photo }}" alt="" onerror="this.remove()">{% endif %}
@@ -18,6 +19,7 @@
 
 {% if unreadable %}
 <p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Nie mogę odczytać. Zrób zdjęcie jeszcze raz w lepszym świetle.</span></p>
+<a class="btn primary" href="/dodaj">Zrób ponownie</a>
 {% elif reason %}
 <p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Przekaż to pismo dalej. Powód: {{ reason }}.</span></p>
 {% endif %}

@@ -51,6 +51,7 @@
 /* Dynamic Type (DR-14): -apple-system-body only reads the iOS text size; 1rem = that size. */
 html { font-size: 100%; font: -apple-system-body; font-family: var(--body); -webkit-text-size-adjust: 100%; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body {
   margin: 0; min-height: 100dvh; background: var(--ground); color: var(--ink);
   font-family: var(--body); font-size: 1.0625rem; line-height: 1.5;
@@ -208,3 +209,31 @@ a { color: inherit; }
   .jolt { animation: none; }
   .spinner { animation: none; }
 }
+
+/* Upload (DR-6, DR-7). */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.thumb { width: 72px; height: 96px; border-radius: var(--r-stamp); border: 1px solid var(--rule); background: var(--sheet); position: relative; display: grid; place-items: center; font-weight: 700; overflow: hidden; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; }
+.thumb.add { width: 120px; border: 2px dashed var(--muted); background: transparent; color: var(--ink); cursor: pointer; text-align: center; padding: 8px; }
+.thumb.add:focus-within { outline: 3px solid var(--ink); outline-offset: 3px; }
+.thumb .remove { position: absolute; top: 0; right: 0; width: 32px; height: 32px; border: 0; border-radius: 0 0 0 var(--r-sm); background: var(--ink); color: var(--on-ink); font-size: 1.1rem; cursor: pointer; }
+.thumb .remove::after { content: ""; position: absolute; inset: -8px; } /* 48 px touch target */
+.pick-file { display: inline-flex; align-items: center; min-height: 48px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.pick-file:focus-within { outline: 3px solid var(--ink); outline-offset: 3px; }
+.field-group { border: 0; padding: 0; margin: 12px 0 0; }
+.field-group legend { padding: 0; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.chip span { display: inline-grid; place-items: center; min-height: 48px; padding: 0 18px; border-radius: 9999px; border: 2px solid var(--ink); font-weight: 700; }
+.chip input:checked + span { background: var(--ink); color: var(--on-ink); }
+.chip input:focus-visible + span { outline: 3px solid var(--ink); outline-offset: 3px; }
+.field { display: grid; gap: 6px; margin-top: 16px; font-weight: 700; }
+.field input { min-height: 52px; padding: 0 14px; border-radius: var(--r-sm); border: 2px solid var(--muted); background: var(--sheet); font-weight: 400; }
+#earlier-date { display: none; }
+.field-group:has(#earlier:checked) #earlier-date { display: grid; }
+.check { display: flex; gap: 12px; align-items: flex-start; margin-top: 24px; cursor: pointer; }
+.check input { width: 24px; height: 24px; margin: 2px 0 0; accent-color: var(--ink); flex: none; }
+.actions { margin-top: 24px; }
+.btn.big { min-height: 72px; font-size: 1.2rem; margin-top: 24px; }

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Dodaj pismo · Domowy Sekretariat{% endblock %}
+{% block head %}<script src="/static/upload.js" defer></script>{% endblock %}
+{% block content %}
+<h1 class="title">Dodaj pismo</h1>
+<p class="notice" id="upload-error"{% if not error %} hidden{% endif %}><span class="i t-urgent" aria-hidden="true">▲</span><span>{{ error }}</span></p>
+
+<form id="upload" method="post" action="/dodaj" enctype="multipart/form-data" data-max-pages="{{ max_pages }}">
+  <div class="thumbs" id="thumbs" aria-live="polite">
+    <label class="thumb add" id="add-page">
+      <span id="add-label">Zrób zdjęcie</span>
+      <input class="visually-hidden" id="camera" type="file" name="pages" accept="image/*" capture="environment" multiple>
+    </label>
+  </div>
+  <label class="pick-file">
+    albo wybierz plik
+    <input class="visually-hidden" id="file" type="file" name="pages" accept="image/*,application/pdf" multiple>
+  </label>
+
+  <fieldset class="field-group">
+    <legend class="section-h">Kiedy przyszło?</legend>
+    <div class="chips">
+      <label class="chip"><input type="radio" name="when" value="today" checked><span>Dziś</span></label>
+      <label class="chip"><input type="radio" name="when" value="yesterday"><span>Wczoraj</span></label>
+      <label class="chip"><input type="radio" name="when" value="earlier" id="earlier"><span>Wcześniej…</span></label>
+    </div>
+    <label class="field" id="earlier-date">
+      <span>Data doręczenia</span>
+      <input type="date" name="delivery_date" max="{{ today }}">
+    </label>
+  </fieldset>
+
+  {% if can_be_private %}
+  <label class="check">
+    <input type="checkbox" name="private" value="true">
+    <span><strong>Prywatne</strong><br><span class="muted">Osoba prowadząca sekretariat zobaczy tylko nadawcę i termin.</span></span>
+  </label>
+  {% endif %}
+
+  <div class="actions">
+    <button class="btn primary" id="submit" type="submit">Gotowe, przeanalizuj</button>
+  </div>
+</form>
+{% endblock %}
