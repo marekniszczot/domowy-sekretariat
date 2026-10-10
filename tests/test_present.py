@@ -176,8 +176,15 @@ def test_quote_context_at_text_edges_has_no_ellipsis():
 
 def test_sender_labels_and_unknown_type():
     assert present.sender_label("TELEKOMUNIKACJA") == "Operator telekomunikacyjny"
+    assert present.sender_label("PRACODAWCA") == "Pracodawca"
     assert present.sender_label(None) == "Nowe pismo"
     assert present.sender_label("COS_NOWEGO") == "Inny nadawca"
+
+
+def test_every_sender_type_has_a_label():
+    from sekretariat.llm import SenderType
+
+    assert set(present.SENDERS) == {t.value for t in SenderType}
 
 
 @pytest.mark.parametrize(

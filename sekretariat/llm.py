@@ -35,6 +35,9 @@ class SenderType(StrEnum):
     WSPOLNOTA = "WSPOLNOTA"
     TELEKOMUNIKACJA = "TELEKOMUNIKACJA"
     ENERGIA = "ENERGIA"
+    PRACODAWCA = "PRACODAWCA"
+    ZUS = "ZUS"
+    PRZYCHODNIA = "PRZYCHODNIA"
     INNY = "INNY"
 
 
@@ -51,7 +54,9 @@ class DeadlineUnit(StrEnum):
 
 
 class LetterAnalysis(BaseModel):
-    sender_type: SenderType
+    sender_type: SenderType = Field(
+        description="W jakiej roli nadawca pisze do adresata, nie branża firmy"
+    )
     addressee: str = Field(description="OSOBA_n, OSOBA_DOMU, INNA_n, INNA albo NIEZNANY")
     summary_plain_pl: str = Field(description="Najwyżej 3 zdania prostym polskim")
     required_action: str = Field(description="Co trzeba zrobić; pusty tekst, jeśli nic")
@@ -119,6 +124,10 @@ Zasady:
   albo miesięcy (nie przeliczaj ich na datę ani na inną jednostkę; „dni robocze” to DAYS);
   NONE, gdy terminu nie ma. deadline_quote obejmuje też słowa o tym, od czego liczyć
   termin (np. „od dnia doręczenia”), jeśli pismo je podaje.
+- sender_type opisuje, w jakiej roli nadawca pisze do adresata, a nie branżę firmy:
+  pismo kadrowe od firmy energetycznej, w której adresat pracuje, to PRACODAWCA,
+  a rachunek od tej samej firmy to ENERGIA. ZUS to ZUS, nie URZAD. PRZYCHODNIA to
+  przychodnia, szpital, gabinet lekarski albo laboratorium.
 - letter_date to data wystawienia pisma, jeśli pismo ją podaje.
 - confidence to Twoja pewność co do werdyktu, od 0 do 1.
 - summary_plain_pl i required_action pisz prostym polskim, bez żargonu.

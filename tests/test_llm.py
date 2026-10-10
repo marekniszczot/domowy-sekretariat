@@ -116,12 +116,16 @@ def test_inconsistent_analysis_is_a_schema_failure(overrides):
     assert result.reason.startswith("schema")
 
 
-@pytest.mark.integration
-def test_analyze_against_real_gemini():
+def test_prompt_asks_for_the_sender_role_not_the_industry():
+    from sekretariat.llm import SYSTEM_INSTRUCTION
+
+    assert "PRACODAWCA" in SYSTEM_INSTRUCTION and "nie branżę firmy" in SYSTEM_INSTRUCTION
+
+
+@pytest.fixture
+def gemini():
     import google.oauth2.credentials
     from google import genai
-
-    from sekretariat.guard import guard
 
     token = subprocess.run(
         [
@@ -135,12 +139,18 @@ def test_analyze_against_real_gemini():
         text=True,
     ).stdout.strip()
     project = os.environ["GCP_PROJECT"]
-    client = genai.Client(
+    return genai.Client(
         vertexai=True,
         project=project,
         location="europe-central2",
         credentials=google.oauth2.credentials.Credentials(token, quota_project_id=project),
     )
+
+
+@pytest.mark.integration
+def test_analyze_against_real_gemini(gemini):
+    from sekretariat.guard import guard
+
     letter = (
         "Szanowny Panie OSOBA_1,\n"
         "wzywamy do zapłaty kwoty 245,00 zł za usługi telekomunikacyjne w terminie 14 dni "
@@ -148,8 +158,47 @@ def test_analyze_against_real_gemini():
         "Z poważaniem, Telekom S.A."
     )
 
-    result = analyze(client, letter, RULES)
+    result = analyze(gemini, letter, RULES)
 
     assert isinstance(result, LetterAnalysis), result
     checked = guard(letter, result, {"R1", "R2"}, member_count=2, escalation=())
     assert "rule_trigger_quote" in checked.quote_spans, checked
+
+
+ENERGY_COMPANY = "Gazownia Przykładowa S.A., ul. Przemysłowa 1, Warszawa"
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize(
+    "letter, expected",
+    [
+        (
+            f"{ENERGY_COMPANY}\nDział Kadr\n\nPan OSOBA_1\n"
+            "Potwierdzamy przyjęcie Pana oświadczenia o rozwiązaniu umowy o pracę za "
+            "wypowiedzeniem. Okres wypowiedzenia upływa 31.12.2026 r. Świadectwo pracy "
+            "zostanie wydane w ostatnim dniu zatrudnienia.",
+            "PRACODAWCA",
+        ),
+        (
+            f"{ENERGY_COMPANY}\n\nPan OSOBA_1\nFaktura za paliwo gazowe za wrzesień 2026: "
+            "184,20 zł. Termin płatności: 25.10.2026 r.",
+            "ENERGIA",
+        ),
+        (
+            "Zakład Ubezpieczeń Społecznych, Oddział w Warszawie\n\nPani OSOBA_1\n"
+            "Informujemy o stanie konta ubezpieczonego na dzień 31.12.2025 r. "
+            "Pismo ma charakter informacyjny.",
+            "ZUS",
+        ),
+        (
+            "Przychodnia Rodzinna Zdrowie sp. z o.o.\n\nPani OSOBA_1\n"
+            "Przypominamy o wizycie kontrolnej 20.10.2026 r. o godz. 9:00. "
+            "Prosimy o odwołanie wizyty, jeśli nie może Pani przyjść.",
+            "PRZYCHODNIA",
+        ),
+    ],
+)
+def test_sender_type_is_the_role_towards_the_addressee(gemini, letter, expected):
+    result = analyze(gemini, letter, RULES)
+    assert isinstance(result, LetterAnalysis), result
+    assert result.sender_type == expected

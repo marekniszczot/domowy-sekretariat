@@ -49,6 +49,9 @@ SENDERS = {
     "WSPOLNOTA": "Wspólnota mieszkaniowa",
     "TELEKOMUNIKACJA": "Operator telekomunikacyjny",
     "ENERGIA": "Dostawca energii",
+    "PRACODAWCA": "Pracodawca",
+    "ZUS": "ZUS",
+    "PRZYCHODNIA": "Przychodnia",
     "INNY": "Inny nadawca",
 }
 
