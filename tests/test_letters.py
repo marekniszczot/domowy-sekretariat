@@ -302,3 +302,15 @@ def test_recent_action_is_only_the_users_own_and_fresh(service):
     assert service.recent_action(letter_id, DOM1) == {"cause": "FORWARD", "owner": "koord"}
     assert service.recent_action(letter_id, KOORD) is None
     assert service.recent_action("nope", DOM1) is None
+
+
+def test_memory_store_rules_and_escalation():
+    from sekretariat.store import MemoryStore
+
+    store = MemoryStore()
+    assert store.add_rule("a") == "R1" and store.add_rule("b") == "R2"
+    store.delete_rule("R2")
+    assert store.add_rule("c") == "R3"
+    assert [r.id for r in store.rules()] == ["R1", "R3"]
+    store.set_escalation(["komorni"])
+    assert store.escalation() == ("komorni",)

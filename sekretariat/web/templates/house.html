@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Dom · Domowy Sekretariat{% endblock %}
+{% block head %}<script src="/static/app.js" defer></script>{% endblock %}
+{% block content %}
+<h1 class="title">Dom</h1>
+{% if saved %}<p class="notice" role="status"><span class="i t-ok" aria-hidden="true">✓</span><span>{{ saved }}</span></p>{% endif %}
+{% if error %}<p class="notice" role="alert"><span class="i t-urgent" aria-hidden="true">▲</span><span>{{ error }}</span></p>{% endif %}
+
+<section aria-labelledby="h-rules">
+  <h2 class="group-h" id="h-rules">Domowy regulamin</h2>
+  <p class="muted">Według tych zasad sekretariat decyduje, kto zajmuje się pismem i czy trzeba coś zrobić.</p>
+  {% for rule_id, text in rules %}
+  <div class="rule-item">
+    <p class="rule-line">„{{ text }}”</p>
+    <details class="confirm">
+      <summary>Usuń</summary>
+      <form method="post" action="/dom/zasady/{{ rule_id }}/usun">
+        <button class="btn danger" type="submit">Usuń tę zasadę</button>
+      </form>
+    </details>
+  </div>
+  {% else %}
+  <p class="empty-small">Regulamin jest pusty. Bez zasad każde pismo trafia do sprawdzenia.</p>
+  {% endfor %}
+
+  <form class="rule-form" method="post" action="/dom/zasady">
+    <h3 class="section-h">Nowa zasada</h3>
+    <label class="field"><span>Zasada</span>
+      <input name="sentence" maxlength="300" required placeholder="np. Rachunki za prąd i gaz">
+      <span class="hint">Jedno zdanie, zwykłymi słowami.</span>
+    </label>
+    <label class="field"><span>Kto się tym zajmuje</span>
+      <select name="member">
+        <option value="">Nikt, nic nie trzeba robić</option>
+        {% for m in choices %}<option value="{{ m.id }}">{{ m.name }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="field"><span>Od kogo pismo (opcjonalnie)</span>
+      <select name="sender_type">
+        <option value="">Od kogokolwiek</option>
+        {% for code, label in senders.items() %}<option value="{{ code }}">{{ label }}</option>{% endfor %}
+      </select>
+    </label>
+    <button class="btn primary" type="submit">Dodaj zasadę</button>
+  </form>
+</section>
+
+<section aria-labelledby="h-esc">
+  <h2 class="group-h" id="h-esc">Zawsze pilne</h2>
+  <p class="muted">Pismo, w którym pojawi się któreś z tych słów, dostaje pieczątkę „Pilne”. Wystarczy początek słowa: „komorni” pasuje do „komornika” i „komorniczej”.</p>
+  <form method="post" action="/dom/eskalacja">
+    <label class="field"><span>Słowa, po jednym w linii</span>
+      <textarea name="entries" rows="7">{{ escalation }}</textarea>
+    </label>
+    <button class="btn" type="submit">Zapisz listę</button>
+  </form>
+</section>
+
+<section aria-labelledby="h-members">
+  <h2 class="group-h" id="h-members">Domownicy</h2>
+  <ul class="members">
+    {% for name, role in members %}<li><strong>{{ name }}</strong> <span class="muted">· {{ role }}</span></li>{% endfor %}
+  </ul>
+  <p class="muted">Domowników zmienia się w pliku household.yaml, potem skrypt upload_household.sh.</p>
+</section>
+
+<form method="post" action="/logout" class="logout"><button class="btn ghost" type="submit">Wyloguj</button></form>
+{% endblock %}

@@ -314,3 +314,19 @@ a { color: inherit; }
   .list-pane { position: sticky; top: 32px; max-height: calc(100dvh - 64px); overflow: auto; padding-right: 8px; }
   .undo-bar { bottom: 24px; }
 }
+
+/* Dom (DR-17). */
+.rule-item { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.rule-item .rule-line { margin: 0 0 4px; }
+.confirm summary { display: inline-flex; align-items: center; min-height: 48px; color: var(--urgent); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 4px; list-style: none; }
+.confirm summary::-webkit-details-marker { display: none; }
+.btn.danger { color: var(--urgent); border-color: var(--urgent); }
+.empty-small { font-weight: 700; }
+.rule-form { margin-top: 16px; }
+.rule-form .btn, section > form > .btn { margin-top: 16px; }
+.field select, .field textarea { min-height: 52px; padding: 12px 14px; border-radius: var(--r-sm); border: 2px solid var(--muted); background: var(--sheet); font-weight: 400; }
+.field textarea { font-family: var(--body); font-size: inherit; resize: vertical; }
+.field .hint { font-size: .9rem; font-weight: 400; color: var(--muted); }
+.members { list-style: none; padding: 0; margin: 0 0 8px; }
+.members li { min-height: 48px; display: flex; align-items: center; gap: 6px; }
+.logout { margin-top: 40px; }

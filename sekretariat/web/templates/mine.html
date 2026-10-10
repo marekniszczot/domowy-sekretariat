@@ -14,5 +14,6 @@
 <p class="muted">Dostajesz pismo z banku, urzędu albo od dostawcy prądu? Zrób mu zdjęcie, a powiem, o co chodzi i czy musisz coś zrobić.</p>
 <a class="btn primary big" href="/dodaj">Zrób zdjęcie pisma</a>
 {% endfor %}
+<form method="post" action="/logout" class="logout"><button class="btn ghost" type="submit">Wyloguj</button></form>
 {% include "_undo.html" %}
 {% endblock %}

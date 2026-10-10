@@ -14,7 +14,7 @@ from sekretariat.web.pages import today
 
 DOM1 = Member("dom1", Role.DOMOWNIK, ("Ala",), emails=("dom1@example.com",))
 KOORD = Member("koord", Role.KOORDYNATOR, ("Olek",), emails=("koord@example.com",))
-DOM2 = Member("dom2", Role.DOMOWNIK, ("Ula",), emails=("dom2@example.com",))
+DOM2 = Member("dom2", Role.DOMOWNIK, ("Ula", "Uli"), emails=("dom2@example.com",))
 HOUSE = [DOM1, KOORD, DOM2]
 JPEG = (b"\xff\xd8 page", "image/jpeg")
 
@@ -454,3 +454,59 @@ def test_processing_letter_from_wszystkie_opens_its_steps(app, store):
     letter_id = store.create_letter({"status": "received", "uploaded_by": "dom1"})
     response = as_member(app, KOORD).get(f"/wszystkie/{letter_id}")
     assert response.headers["location"] == f"/pisma/{letter_id}"
+
+
+# Dom (DR-17)
+
+
+def test_house_is_for_the_coordinator_only(app):
+    assert as_member(app, DOM1).get("/dom").status_code == 404
+    assert as_member(app, DOM1).post("/dom/zasady", data={"sentence": "x"}).status_code == 403
+    assert as_member(app, DOM1).post("/dom/eskalacja", data={"entries": ""}).status_code == 403
+    assert as_member(app, DOM1).post("/dom/zasady/R1/usun").status_code == 403
+
+
+def test_house_shows_rules_with_names_and_members(app, store):
+    page = as_member(app, KOORD).get("/dom").text
+    assert (
+        "„Rachunki ogarnia Ala.”" in page and "R1" not in page.split("<main")[1].split("action=")[0]
+    )
+    assert '<strong>Olek</strong> <span class="muted">· prowadzi sekretariat</span>' in page
+    assert 'href="/dom" aria-current="page"' in page
+
+
+def test_new_rule_is_stored_with_placeholders(app, store):
+    http = as_member(app, KOORD)
+    response = http.post(
+        "/dom/zasady",
+        data={"sentence": "Pisma z banku zawsze do Uli", "member": "dom2", "sender_type": "BANK"},
+    )
+    assert response.headers["location"] == "/dom?zapisano=zasada"
+    rule = store.rules()[-1]
+    assert rule.id == "R2"
+    assert "Uli" not in rule.text and "Dotyczy: Bank." in rule.text
+    assert rule.display == "Pisma z banku zawsze do Uli. Dotyczy: Bank."
+    page = http.get(response.headers["location"]).text
+    assert "Zapisano zasadę." in page and "„Pisma z banku zawsze do Uli. Dotyczy: Bank.”" in page
+
+
+def test_empty_rule_is_explained(app, store):
+    response = as_member(app, KOORD).post("/dom/zasady", data={"sentence": "  "})
+    assert response.status_code == 400 and "jednym zdaniem" in response.text
+    assert len(store.rules()) == 1
+
+
+def test_rule_is_deleted(app, store):
+    as_member(app, KOORD).post("/dom/zasady/R1/usun")
+    assert store.rules() == []
+
+
+def test_escalation_list_is_cleaned_and_saved(app, store):
+    as_member(app, KOORD).post(
+        "/dom/eskalacja", data={"entries": "Komorni\n\n  sąd  \nkomorni\nurz   skarbow"}
+    )
+    assert store.escalation() == ("komorni", "sąd", "urz skarbow")
+
+
+def test_everyone_can_sign_out_from_their_list(app):
+    assert 'action="/logout"' in as_member(app, DOM1).get("/").text

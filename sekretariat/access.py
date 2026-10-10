@@ -14,6 +14,7 @@
         confirm deadline                owner or coordinator (also on private letters)
         „Zrobione”, „Otwórz ponownie”   owner, or coordinator with FULL
         „Odkryj” (make not private)     addressee or uploader
+        rules, escalation list          coordinator
 
 Letters that are not processed yet are visible only to the uploader and the
 coordinator; before the verdict there is nothing to act on.
@@ -86,6 +87,11 @@ def can_reveal(letter: dict, user: Member) -> bool:
         letter.get("addressee"),
         letter.get("uploaded_by"),
     }
+
+
+def can_configure(user: Member) -> bool:
+    """„Dom”: rules, escalation list (DR-2, DR-17)."""
+    return user.role == Role.KOORDYNATOR
 
 
 def forward_targets(household: list[Member], user: Member) -> list[Member]:

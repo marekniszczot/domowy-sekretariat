@@ -137,3 +137,28 @@ def test_pipeline_on_real_services(gcp):
         db.collection("test_letters").document(letter_id).delete()
         db.collection("test_rules").document("R1").delete()
         blobs._bucket.blob(path).delete()
+
+
+def test_rules_and_escalation_in_firestore(gcp):
+    from google.cloud import firestore
+
+    from sekretariat.store import FirestoreStore
+
+    project, credentials = gcp
+    db = firestore.Client(project=project, credentials=credentials)
+    prefix = f"test_{uuid.uuid4().hex[:8]}_"
+    store = FirestoreStore(db, prefix=prefix)
+    try:
+        first = store.add_rule("Rachunki opłaca OSOBA_1.", "Rachunki opłaca Ala.")
+        second = store.add_rule("Pisma z banku do OSOBA_2.")
+        assert (first, second) == ("R1", "R2")
+        store.delete_rule(second)
+        assert store.add_rule("Nowa zasada.") == "R3"  # R2 is never reused
+        assert [r.id for r in store.rules()] == ["R1", "R3"]
+        assert store.rules()[0].display == "Rachunki opłaca Ala."
+        store.set_escalation(["komorni", "sąd"])
+        assert store.escalation() == ("komorni", "sąd")
+    finally:
+        for name in ("rules", "settings"):
+            for doc in db.collection(f"{prefix}{name}").stream():
+                doc.reference.delete()

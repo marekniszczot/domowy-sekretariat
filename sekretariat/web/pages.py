@@ -7,6 +7,7 @@ the `Letters` service returns for the signed-in member.
     GET /pisma/{id}               verdict card, processing steps or metadata (DR-5)
     GET /pisma/{id}/kroki         processing steps fragment, polled by htmx
     GET /pisma/{id}/strona/{n}    page photo for the greyed band (DR-1)
+    GET /dom, POST /dom/...       rules, escalation list, members; coordinator (DR-17)
     GET /wszystkie[/{id}]         the household's letters, coordinator only (DR-3);
                                   with an id, the letter beside the list (DR-15)
     GET/POST /dodaj               upload: pages, delivery date, private (DR-6, DR-7)
@@ -38,6 +39,7 @@ from sekretariat.letters import (
     NeedsConfirmation,
     NotFound,
 )
+from sekretariat.rules import InvalidRule, compose
 from sekretariat.web import present
 
 templates = Jinja2Templates(directory=Path(__file__).parent / "templates")
@@ -65,6 +67,7 @@ def tabs(user: Member, badge: int = 0) -> list[Tab]:
     ]
     if user.role == Role.KOORDYNATOR:
         bar.append(Tab("all", "Wszystkie", "/wszystkie"))
+        bar.append(Tab("house", "Dom", "/dom"))
     return bar
 
 
@@ -376,7 +379,7 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         "summary": names(analysis.get("summary_plain_pl")),
         "consequence": quote("consequence_quote"),
         "why": why,
-        "rule": names(rule.text) if rule else None,
+        "rule": (rule.display or names(rule.text)) if rule else None,
         "quotes": [q for q in (quote("rule_trigger_quote"), quote("deadline_quote")) if q],
         "photo": f"/pisma/{letter['id']}/strona/1" if photo else None,
         "first": first,
@@ -514,7 +517,7 @@ def actions(letter: dict, user: Member, config, day: date) -> dict:
         rule = next((r for r in rules if r.id == rule_id), None)
         why = "prowadzi domowy sekretariat"
         if suggestion and rule and f"OSOBA_{household.index(suggestion) + 1}" in rule.text:
-            why = present.with_names(rule.text, household)
+            why = rule.display or present.with_names(rule.text, household)
         others = [m for m in access.forward_targets(household, user) if m != suggestion]
         sheet = {
             "suggestion": suggestion,
@@ -547,3 +550,88 @@ def actions(letter: dict, user: Member, config, day: date) -> dict:
         "coordinator": coordinator.name if coordinator else "",
         "deadline": deadline,
     }
+
+
+# Dom (DR-17, without „Sprawdź na ostatnich pismach” for now)
+
+ROLES = {Role.KOORDYNATOR: "prowadzi sekretariat", Role.DOMOWNIK: "ma konto",
+         Role.BEZ_KONTA: "bez konta"}  # fmt: skip
+_SAVED = {"zasada": "Zapisano zasadę.", "usunieto": "Usunięto zasadę.",
+          "eskalacja": "Zapisano listę."}  # fmt: skip
+
+
+def _coordinator(request: Request) -> Member | None:
+    user = signed_in(request)
+    return user if user is not None and access.can_configure(user) else None
+
+
+@router.get("/dom")
+def house(request: Request):
+    user = signed_in(request)
+    if user is None:
+        return login_page(request)
+    if not access.can_configure(user):
+        return not_found(request)
+    return house_page(request, user)
+
+
+def house_page(request: Request, user: Member, error: str = "", status_code: int = 200):
+    config = request.app.state.config
+    store = config.letters.store
+    return render(
+        request,
+        "house.html",
+        {
+            "rules": [
+                (r.id, r.display or present.with_names(r.text, config.household))
+                for r in store.rules()
+            ],
+            "members": [(m.name, ROLES[m.role]) for m in config.household],
+            "choices": config.household,
+            "senders": present.SENDERS,
+            "escalation": "\n".join(store.escalation()),
+            "saved": _SAVED.get(request.query_params.get("zapisano", "")),
+            "error": error,
+            "tabs": tabs(user, open_count(config.letters.mine(user))),
+            "active": "house",
+        },
+        status_code,
+    )
+
+
+@router.post("/dom/zasady")
+def add_rule(
+    request: Request,
+    sentence: Annotated[str, Form()] = "",
+    member: Annotated[str, Form()] = "",
+    sender_type: Annotated[str, Form()] = "",
+):
+    user = _coordinator(request)
+    if user is None:
+        return Response(status_code=403)
+    household = request.app.state.config.household
+    chosen = next((m for m in household if m.id == member), None)
+    label = present.SENDERS.get(sender_type)
+    try:
+        text, display = compose(sentence, chosen, label, household)
+    except InvalidRule:
+        return house_page(request, user, "Napisz zasadę jednym zdaniem, do 300 znaków.", 400)
+    request.app.state.config.letters.store.add_rule(text, display)
+    return RedirectResponse("/dom?zapisano=zasada", status_code=303)
+
+
+@router.post("/dom/zasady/{rule_id}/usun")
+def delete_rule(request: Request, rule_id: str):
+    if _coordinator(request) is None:
+        return Response(status_code=403)
+    request.app.state.config.letters.store.delete_rule(rule_id)
+    return RedirectResponse("/dom?zapisano=usunieto", status_code=303)
+
+
+@router.post("/dom/eskalacja")
+def save_escalation(request: Request, entries: Annotated[str, Form()] = ""):
+    if _coordinator(request) is None:
+        return Response(status_code=403)
+    cleaned = list(dict.fromkeys(" ".join(e.split()).casefold() for e in entries.splitlines()))
+    request.app.state.config.letters.store.set_escalation([e for e in cleaned if e])
+    return RedirectResponse("/dom?zapisano=eskalacja", status_code=303)
