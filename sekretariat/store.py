@@ -22,6 +22,8 @@ from sekretariat.rules import Rule
 class Store(Protocol):
     def create_letter(self, fields: dict[str, Any]) -> str: ...
     def get_letter(self, letter_id: str) -> dict[str, Any] | None: ...
+    def list_letters(self) -> list[dict[str, Any]]: ...
+    def find_letter_by_hash(self, file_sha256: str) -> list[dict[str, Any]]: ...
     def update_letter(self, letter_id: str, fields: dict[str, Any]) -> None: ...
     def add_event(self, letter_id: str, event: dict[str, Any]) -> None: ...
     def events(self, letter_id: str) -> list[dict[str, Any]]: ...
@@ -48,6 +50,14 @@ class MemoryStore:
     def get_letter(self, letter_id):
         letter = self.letters.get(letter_id)
         return dict(letter) if letter is not None else None
+
+    def list_letters(self):
+        return [{"id": i, **letter} for i, letter in self.letters.items()]
+
+    def find_letter_by_hash(self, file_sha256):
+        return [
+            letter for letter in self.list_letters() if letter.get("file_sha256") == file_sha256
+        ]
 
     def update_letter(self, letter_id, fields):
         self.letters[letter_id].update(fields)
@@ -81,6 +91,16 @@ class FirestoreStore:
     def get_letter(self, letter_id):
         snapshot = self._letters().document(letter_id).get()
         return snapshot.to_dict() if snapshot.exists else None
+
+    def list_letters(self):
+        # One household: a few hundred letters a year, no pagination needed.
+        return [{"id": d.id, **d.to_dict()} for d in self._letters().stream()]
+
+    def find_letter_by_hash(self, file_sha256):
+        query = self._letters().where(
+            filter=firestore.FieldFilter("file_sha256", "==", file_sha256)
+        )
+        return [{"id": d.id, **d.to_dict()} for d in query.stream()]
 
     def update_letter(self, letter_id, fields):
         self._letters().document(letter_id).update(fields)
