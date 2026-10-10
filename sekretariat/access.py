@@ -8,6 +8,7 @@
         anyone else ──────────────────────────────────────▶ NONE
 
     actions:
+        page photos, mark as seen       FULL
         „Zajmę się tym”, „Przekaż”      FULL (private: forwarding needs confirmation,
                                           because the target will see the content)
         confirm deadline                owner or coordinator (also on private letters)
@@ -46,6 +47,11 @@ def view_level(letter: dict, user: Member) -> View:
 
 def _processed(letter: dict) -> bool:
     return letter.get("status") in {"verdict", "failed"}
+
+
+def can_read(letter: dict, user: Member) -> bool:
+    """Content: verdict, text and page photos."""
+    return view_level(letter, user) == View.FULL
 
 
 def can_act(letter: dict, user: Member) -> bool:

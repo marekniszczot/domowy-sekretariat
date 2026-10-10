@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 from sekretariat import access
 from sekretariat.access import View
-from sekretariat.blobs import Blobs
+from sekretariat.blobs import BlobMissing, Blobs
 from sekretariat.household import Member, Role
 from sekretariat.owners import Cause, act
 from sekretariat.store import Store, now
@@ -28,6 +28,7 @@ MAX_PAGES = 10
 MAX_PAGE_BYTES = 15 * 1024 * 1024
 UNDO_WINDOW = timedelta(seconds=60)  # the UI offers 8 s; the rest absorbs latency
 PROCESSING = {"received", "ocr_done", "masked"}
+FINISHED = {"verdict", "failed", "unreadable"}
 METADATA_FIELDS = ("status", "deadline", "owner", "state", "private", "created_at")
 UNDOABLE = ("owner", "state", "private", "deadline")
 
@@ -84,6 +85,27 @@ class Letters:
             )
         ]
         return sorted(letters, key=_newest_first)
+
+    def page(self, letter_id: str, user: Member, number: int) -> tuple[bytes, str]:
+        """Photo of page `number` (from 1); NotFound once the lifecycle rule deleted it."""
+        letter = self._letter(letter_id, user, access.can_read)
+        pages = letter.get("pages") or []
+        if not 1 <= number <= len(pages):
+            raise NotFound(letter_id)
+        try:
+            return self.blobs.get(pages[number - 1]["path"])
+        except BlobMissing:
+            raise NotFound(letter_id) from None
+
+    def mark_seen(self, letter_id: str, user: Member) -> bool:
+        """True on the user's first look at a finished letter: the stamp lands then
+        (DESIGN.md, Motion) and the „nowe” dot goes away."""
+        letter = self._letter(letter_id, user, access.can_read)
+        seen = letter.get("seen_by") or []
+        if letter.get("status") not in FINISHED or user.id in seen:
+            return False
+        self.store.update_letter(letter_id, {"seen_by": [*seen, user.id]})
+        return True
 
     def household_letters(self, user: Member) -> list[tuple[dict, View]]:
         """„Wszystkie”: coordinator only, private letters as metadata."""

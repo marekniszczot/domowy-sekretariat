@@ -1,0 +1,13 @@
+{% macro letter_row(r) -%}
+<a class="row" href="{{ r.href }}">
+  <span class="{{ r.mini }}" aria-hidden="true">{{ r.icon }}</span>
+  <span class="main">
+    <span class="who">{{ r.who }}{% if r.new %}<span class="new-dot" role="img" aria-label="nowe"></span>{% endif %}</span>
+    {% if r.sub %}<span class="sub">{{ r.sub }}</span>{% endif %}
+  </span>
+  <span class="right">
+    {% if r.count %}<span class="count{% if r.tone == 't-urgent' %} t-urgent{% endif %}">{{ r.count }}</span>{% endif %}
+    {% if r.word %}<span class="word {{ r.tone }}">{{ r.word }}</span>{% endif %}
+  </span>
+</a>
+{%- endmacro %}

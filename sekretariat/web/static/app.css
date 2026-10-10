@@ -105,3 +105,106 @@ a { color: inherit; }
 /* Sign-in. */
 .signin { display: flex; flex-direction: column; justify-content: center; min-height: 70dvh; }
 .signin .g_id_signin { min-height: 48px; margin-top: 8px; }
+
+.back { display: inline-flex; align-items: center; min-height: 48px; font-weight: 700; text-decoration: none; }
+.empty { font-size: 1.3rem; font-weight: 700; margin: 40px 0 8px; }
+
+/* Verdict stamp: state fill, 6 px double frame, verb in Bricolage, deadline in mono. */
+.stamp {
+  --c: var(--todo); --on: var(--todo-on);
+  background: var(--c); color: var(--on);
+  border: 6px double color-mix(in srgb, var(--c) 55%, #000);
+  border-radius: var(--r-stamp); padding: 14px 16px 16px;
+}
+.stamp.ok { --c: var(--ok); --on: var(--ok-on); }
+.stamp.unsure { --c: var(--unsure); --on: var(--unsure-on); }
+.stamp.urgent { --c: var(--urgent); --on: var(--urgent-on); }
+@media (prefers-color-scheme: dark) { .stamp, .mini { border-color: color-mix(in srgb, var(--c) 55%, #fff); } }
+.stamp .state { display: flex; gap: 8px; align-items: center; font-weight: 700; font-size: 1rem; }
+.stamp .verb { font-family: var(--display); font-weight: 800; font-size: 1.75rem; line-height: 1.1; margin: 6px 0 8px; font-variation-settings: "opsz" 96; overflow-wrap: anywhere; }
+.stamp .when { font-family: var(--mono); font-weight: 600; font-size: 1.175rem; font-variant-numeric: tabular-nums; }
+
+/* The greyed letter under the stamp (DR-1). */
+.letter-band {
+  height: 96px; margin: 0 -16px; position: relative; overflow: hidden; filter: grayscale(1);
+  background: repeating-linear-gradient(180deg, transparent 0 13px, var(--veil) 13px 15px), var(--sheet);
+}
+.letter-band img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.letter-band .veil { position: absolute; inset: 0; background: var(--veil); }
+.verdict-stamp { margin-top: -28px; position: relative; }
+
+.meta { margin: 20px 0 0; color: var(--muted); font-size: 1rem; }
+.meta strong { display: block; color: var(--ink); font-size: 1.0625rem; }
+.confidence { font-weight: 700; font-size: .9rem; color: var(--muted); margin: 8px 0 0; }
+.notice { margin-top: 16px; }
+.section-h { display: flex; gap: 8px; align-items: center; font-family: var(--body); font-weight: 800; font-size: 1.0625rem; margin: 24px 0 4px; }
+.p { margin: 0; }
+.rule-line { font-family: var(--display); font-weight: 600; font-size: 1.3rem; line-height: 1.3; margin: 4px 0 2px; font-variation-settings: "opsz" 48; }
+.rule-src { color: var(--muted); font-size: .9rem; margin: 0; }
+.quote { margin: 12px 0 0; padding: 12px 14px; background: var(--veil); border-radius: var(--r-sm); }
+.quote mark { background: var(--highlight); color: inherit; padding: 0 2px; }
+.in-letter { margin-top: 24px; }
+.row-btn {
+  display: flex; justify-content: space-between; align-items: center; min-height: 56px; cursor: pointer;
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); font-weight: 700; list-style: none;
+}
+.row-btn::-webkit-details-marker { display: none; }
+.in-letter[open] .row-btn span:last-child { transform: rotate(180deg); }
+
+/* Lists (DR-3): group headings in Bricolage, 72 px rows separated by space. */
+.group-h { font-family: var(--display); font-weight: 800; font-size: 1.3rem; margin: 28px 0 6px; font-variation-settings: "opsz" 48; }
+.row { display: flex; gap: 14px; align-items: center; min-height: 72px; padding: 6px 0; text-decoration: none; }
+.row + .row { margin-top: 6px; }
+.row .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.row .who { font-weight: 700; line-height: 1.25; }
+.row .sub { color: var(--muted); font-size: .9rem; }
+.row .right { flex: none; display: flex; flex-direction: column; align-items: flex-end; text-align: right; }
+.row .count { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.row .word { font-size: .85rem; font-weight: 700; }
+.new-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--ink); margin-left: 6px; vertical-align: middle; }
+
+.mini {
+  --c: var(--rule); --on: var(--ink);
+  width: 48px; height: 48px; flex: none; display: grid; place-items: center; font-size: 1.2rem; font-weight: 800;
+  border-radius: 3px; background: var(--c); color: var(--on); border: 4px double color-mix(in srgb, var(--c) 55%, #000);
+}
+.mini.ok { --c: var(--ok); --on: var(--ok-on); }
+.mini.todo { --c: var(--todo); --on: var(--todo-on); }
+.mini.unsure { --c: var(--unsure); --on: var(--unsure-on); }
+.mini.urgent { --c: var(--urgent); --on: var(--urgent-on); }
+.mini.private, .mini.pending { --c: var(--rule); --on: var(--ink); }
+.mini.pending { border-style: dashed; border-width: 2px; }
+/* Unconfirmed deadline: a stamp that did not press fully (DR-7). */
+.mini.half { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--c) 30%, transparent) 0 4px, transparent 4px 9px); color: var(--ink); border: 3px dashed var(--c); }
+.private-head { display: flex; gap: 14px; align-items: center; margin-top: 8px; }
+.private-head .title { margin: 0; }
+
+/* Processing steps (DR-6). */
+.steps { list-style: none; padding: 0; margin: 24px 0; }
+.steps li { display: flex; gap: 12px; align-items: center; min-height: 56px; font-size: 1.2rem; border-bottom: 1px solid var(--rule); }
+.steps .done { color: var(--muted); }
+.steps .done span:first-child { font-weight: 800; }
+.steps .now { font-weight: 700; }
+.steps .later { color: var(--muted); }
+.steps li > span:first-child { width: 20px; flex: none; }
+.spinner { height: 20px; border: 3px solid var(--rule); border-top-color: var(--ink); border-radius: 50%; animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* The one authored moment: the stamp lands, wet ink dries, the paper jolts (DESIGN.md, Motion). */
+.land { animation: stamp-drop 420ms both, ink-dry 900ms ease-out both; }
+@keyframes stamp-drop {
+  0%   { transform: translateY(-48px) scale(1.45) rotate(-4deg); opacity: 0; box-shadow: 0 34px 36px -14px rgba(18,21,28,.45); animation-timing-function: cubic-bezier(.55,0,1,.45); }
+  15%  { opacity: 1; }
+  55%  { transform: translateY(0) scale(.965) rotate(0); box-shadow: 0 0 0 0 rgba(18,21,28,0); animation-timing-function: cubic-bezier(.2,.8,.3,1); }
+  75%  { transform: scale(1.012); }
+  100% { transform: scale(1); opacity: 1; box-shadow: none; }
+}
+@keyframes ink-dry { 0%, 45% { filter: saturate(1.5) brightness(.78); } 100% { filter: none; } }
+.jolt { animation: jolt 180ms ease-out 230ms both; }
+@keyframes jolt { 0% { transform: translateY(0); } 35% { transform: translateY(3px); } 100% { transform: translateY(0); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .land { animation: fade 150ms ease-out both; }
+  .jolt { animation: none; }
+  .spinner { animation: none; }
+}

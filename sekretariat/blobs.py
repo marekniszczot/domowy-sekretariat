@@ -2,7 +2,12 @@
 
 from typing import Protocol
 
+from google.api_core import exceptions as gcp_exceptions
 from google.cloud import storage
+
+
+class BlobMissing(Exception):
+    """Never uploaded, or already deleted by the 30-day lifecycle rule (DR-10)."""
 
 
 class Blobs(Protocol):
@@ -18,6 +23,8 @@ class MemoryBlobs:
         self.files[path] = (data, mime_type)
 
     def get(self, path):
+        if path not in self.files:
+            raise BlobMissing(path)
         return self.files[path]
 
 
@@ -30,5 +37,8 @@ class GcsBlobs:
 
     def get(self, path):
         blob = self._bucket.blob(path)
-        data = blob.download_as_bytes()
+        try:
+            data = blob.download_as_bytes()
+        except gcp_exceptions.NotFound:
+            raise BlobMissing(path) from None
         return data, blob.content_type

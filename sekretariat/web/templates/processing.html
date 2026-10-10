@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block head %}<script src="/static/htmx.min.js" defer></script>{% endblock %}
+{% block content %}
+<a class="back" href="/">‹ Moje pisma</a>
+<h1 class="title">Czytam pismo</h1>
+{% include "_steps.html" %}
+<p class="muted">Zwykle trwa to kilkanaście sekund. Możesz zamknąć, dam znać w „Moich pismach”.</p>
+<a class="btn" href="/">Zamknij</a>
+{% endblock %}

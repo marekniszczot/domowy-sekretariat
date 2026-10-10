@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back" href="/">‹ Wstecz</a>
+<div class="private-head">
+  <span class="mini private" aria-hidden="true">🔒︎</span>
+  <h1 class="title">{{ sender }}</h1>
+</div>
+<p class="meta"><strong>{{ when }}</strong>{% if owner %}zajmuje się: {{ owner }}{% endif %}</p>
+<p class="notice"><span class="i" aria-hidden="true">🔒︎</span><span>To pismo jest prywatne. Widać tylko nadawcę, termin i to, kto się nim zajmuje.</span></p>
+{% endblock %}

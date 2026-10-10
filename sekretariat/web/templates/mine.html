@@ -1,9 +1,15 @@
 {% extends "base.html" %}
+{% from "_row.html" import letter_row %}
 {% block title %}Moje pisma · Domowy Sekretariat{% endblock %}
 {% block content %}
 <h1 class="title">Moje pisma</h1>
-{% if not letters %}
-<p class="lede"><strong>Nic na Ciebie nie czeka.</strong></p>
+{% for title, rows in groups %}
+<section aria-labelledby="g{{ loop.index }}">
+  <h2 class="group-h" id="g{{ loop.index }}">{{ title }}</h2>
+  {% for r in rows %}{{ letter_row(r) }}{% endfor %}
+</section>
+{% else %}
+<p class="empty">Nic na Ciebie nie czeka.</p>
 <p class="muted">Dostajesz pismo z banku, urzędu albo od dostawcy prądu? Zrób mu zdjęcie, a powiem, o co chodzi i czy musisz coś zrobić.</p>
-{% endif %}
+{% endfor %}
 {% endblock %}

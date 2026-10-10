@@ -1,0 +1,11 @@
+<ul class="steps" id="steps" hx-get="/pisma/{{ letter_id }}/kroki" hx-trigger="every 1500ms" hx-swap="outerHTML" aria-live="polite">
+  {% for step in steps %}
+  {% if loop.index0 < current %}
+  <li class="done"><span class="t-ok" aria-hidden="true">✓</span><span>{{ step }}</span></li>
+  {% elif loop.index0 == current %}
+  <li class="now"><span class="spinner" aria-hidden="true"></span><span>{{ step }}…</span></li>
+  {% else %}
+  <li class="later"><span aria-hidden="true"></span><span>{{ step }}</span></li>
+  {% endif %}
+  {% endfor %}
+</ul>

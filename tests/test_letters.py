@@ -248,3 +248,38 @@ def test_undo_by_someone_else_or_too_late(service):
     )
     with pytest.raises(Forbidden):
         service.undo(letter_id, DOM1)
+
+
+# Page photos and first look
+
+
+def test_page_photo_needs_full_view(service):
+    service.blobs.put("uploads/x/p1.jpg", *JPEG)
+    letter_id = processed(service, pages=[{"path": "uploads/x/p1.jpg", "mime": "image/jpeg"}])
+    assert service.page(letter_id, DOM1, 1) == JPEG
+    with pytest.raises(Forbidden):
+        service.page(letter_id, KOORD, 1)  # private: metadata only
+    with pytest.raises(NotFound):
+        service.page(letter_id, DOM2, 1)
+    with pytest.raises(NotFound):
+        service.page(letter_id, DOM1, 2)
+
+
+def test_page_deleted_by_retention_is_not_found(service):
+    letter_id = processed(service, pages=[{"path": "uploads/gone/p1.jpg", "mime": "image/jpeg"}])
+    with pytest.raises(NotFound):
+        service.page(letter_id, DOM1, 1)
+
+
+def test_first_look_is_reported_once_per_member(service):
+    letter_id = processed(service, private=False)
+    assert service.mark_seen(letter_id, DOM1) is True
+    assert service.mark_seen(letter_id, DOM1) is False
+    assert service.mark_seen(letter_id, KOORD) is True
+    assert service.store.get_letter(letter_id)["seen_by"] == ["dom1", "koord"]
+
+
+def test_letter_in_progress_is_not_marked_seen(service):
+    letter_id = processed(service, status="masked")
+    assert service.mark_seen(letter_id, DOM1) is False
+    assert "seen_by" not in service.store.get_letter(letter_id)

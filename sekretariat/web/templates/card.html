@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ sender }} · Domowy Sekretariat{% endblock %}
+{% block content %}
+<a class="back" href="/">‹ Moje pisma</a>
+<div class="paper{% if first %} jolt{% endif %}">
+  <div class="letter-band">
+    {% if photo %}<img src="{{ photo }}" alt="" onerror="this.remove()">{% endif %}
+    <div class="veil"></div>
+  </div>
+  <div class="stamp verdict-stamp {{ state }}{% if first %} land{% endif %}">
+    <div class="state"><span aria-hidden="true">{{ icon }}</span> {{ label }}</div>
+    <div class="verb">{{ verb }}</div>
+    <div class="when">{{ when }}</div>
+  </div>
+</div>
+<p class="meta"><strong>{{ sender }}</strong>{{ delivered }}</p>
+{% if confidence %}<p class="confidence">{{ confidence }}</p>{% endif %}
+
+{% if unreadable %}
+<p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Nie mogę odczytać. Zrób zdjęcie jeszcze raz w lepszym świetle.</span></p>
+{% elif reason %}
+<p class="notice"><span class="i t-unsure" aria-hidden="true">?</span><span>Przekaż to pismo dalej. Powód: {{ reason }}.</span></p>
+{% endif %}
+
+{% if summary %}
+<h2 class="section-h">O co chodzi</h2>
+<p class="p">{{ summary }}</p>
+{% endif %}
+
+{% if consequence %}
+<h2 class="section-h"><span class="t-urgent" aria-hidden="true">▲</span> Jeśli zignorujesz</h2>
+<p class="quote">„{{ consequence[0] }}<mark>{{ consequence[1] }}</mark>{{ consequence[2] }}”</p>
+{% endif %}
+
+{% if rule %}
+<h2 class="section-h">{{ why }}</h2>
+<p class="rule-line">„{{ rule }}”</p>
+<p class="rule-src">Domowy regulamin</p>
+{% endif %}
+
+{% if quotes %}
+<details class="in-letter">
+  <summary class="row-btn"><span>Pokaż w piśmie</span><span aria-hidden="true">⌄</span></summary>
+  {% for before, marked, after in quotes %}
+  <p class="quote">„{{ before }}<mark>{{ marked }}</mark>{{ after }}”</p>
+  {% endfor %}
+</details>
+{% endif %}
+{% endblock %}
