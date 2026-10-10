@@ -5,3 +5,10 @@ infra/*.tfstate.*
 infra/*.tfplan
 infra/terraform.tfvars
 infra/backend.hcl
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
