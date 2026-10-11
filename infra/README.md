@@ -60,10 +60,17 @@ GCLOUD_CONFIGURATION=<config> infra/tf plan
 | Variable | Value |
 |---|---|
 | `GCP_PROJECT_ID` | project id |
-| `GCP_BILLING_ACCOUNT_ID` | billing account id |
 | `GCP_WIF_PROVIDER` | `wif_provider` |
 | `GCP_DEPLOY_SERVICE_ACCOUNT` | `deploy_service_account` |
+| `GCP_EVAL_SERVICE_ACCOUNT` | `eval_service_account` |
 | `GOOGLE_CLIENT_ID` | OAuth client id |
+
+The repository is public and so are its Actions logs. Values that should not be
+published are repository secrets instead, which GitHub masks in logs:
+
+| Secret | Value |
+|---|---|
+| `GCP_BILLING_ACCOUNT_ID` | billing account id |
 | `WEB_BASE_URL` | service URL |
 | `SMTP_HOST` | reminder mailbox SMTP server |
 | `SMTP_USER` | reminder mailbox address |
