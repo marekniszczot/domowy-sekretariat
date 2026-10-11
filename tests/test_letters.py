@@ -191,6 +191,14 @@ def test_confirm_deadline_with_a_corrected_date(service):
     }
 
 
+def test_confirming_a_deadline_checks_reminders(service):
+    reminded = []
+    service.remind = reminded.append
+    letter_id = processed(service)
+    service.confirm_deadline(letter_id, DOM1, date(2026, 10, 20))
+    assert reminded == [letter_id]
+
+
 def test_done_reopen_reveal(service):
     letter_id = processed(service)
     service.done(letter_id, DOM1)

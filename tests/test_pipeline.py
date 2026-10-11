@@ -201,6 +201,20 @@ def test_duplicate_delivery_does_nothing():
     assert len(fake.store.events(letter_id)) == 1
 
 
+def test_reminder_check_once_the_verdict_is_saved():
+    fake = Fake()
+    reminded = []
+    fake.services.remind = reminded.append
+    letter_id = fake.upload()
+    fake.fail.add("analyze")
+    with pytest.raises(ConnectionError):
+        process(fake.services, letter_id)
+    assert reminded == []
+    process(fake.services, letter_id)
+    process(fake.services, letter_id)  # duplicate delivery
+    assert reminded == [letter_id]
+
+
 def test_last_attempt_fails_to_forward():
     fake = Fake()
     letter_id = fake.upload(upload_private=True)

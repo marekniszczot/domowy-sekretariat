@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds the image for Cloud Run (linux/amd64), pushes it to Artifact Registry and
-# deploys it to the `web` service. Terraform owns everything else about the service
-# and ignores the image, so this does not fight `terraform apply`.
+# deploys it to the `web` service and the `jobs` job (same image, other command).
+# Terraform owns everything else about both and ignores the image, so this does not
+# fight `terraform apply`.
 #
 # Usage: GCLOUD_CONFIGURATION=<config> scripts/deploy.sh <project-id> [region]
 set -euo pipefail
@@ -22,4 +23,6 @@ gcloud auth print-access-token --configuration="$GCLOUD_CONFIGURATION" |
   docker login -u oauth2accesstoken --password-stdin "https://${REGISTRY}" >/dev/null
 docker buildx build --platform linux/amd64 -t "$IMAGE" --push .
 gcloud run services update web --image="$IMAGE" --region="$REGION" \
+  --configuration="$GCLOUD_CONFIGURATION" --project="$PROJECT_ID"
+gcloud run jobs update jobs --image="$IMAGE" --region="$REGION" \
   --configuration="$GCLOUD_CONFIGURATION" --project="$PROJECT_ID"

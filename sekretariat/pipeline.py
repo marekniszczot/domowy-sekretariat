@@ -53,6 +53,8 @@ class Services:
     inspect: Callable[[str], list[Finding]]
     analyze: Callable[[str, list[Rule]], LetterAnalysis | LlmFailure]
     household: list[Member]
+    # Immediate reminder when the deadline is already close (D3); must not raise.
+    remind: Callable[[str], None] = lambda letter_id: None
 
 
 class RetryableError(Exception):
@@ -65,6 +67,7 @@ def process(services: Services, letter_id: str, attempt: int = 0) -> str:
     if letter is None:
         log.warning("letter %s not found", letter_id)
         return "missing"
+    judged = False
     try:
         if letter["status"] == "received":
             letter |= _ocr(services, letter_id, letter)
@@ -72,6 +75,7 @@ def process(services: Services, letter_id: str, attempt: int = 0) -> str:
             letter |= _mask(services, letter_id, letter)
         if letter["status"] == "masked":
             letter |= _verdict(services, letter_id, letter)
+            judged = True
     except Exception as error:
         if attempt + 1 >= MAX_ATTEMPTS:
             log.error(
@@ -81,6 +85,8 @@ def process(services: Services, letter_id: str, attempt: int = 0) -> str:
         else:
             log.warning("letter %s: retry after %s", letter_id, type(error).__name__)
             raise
+    if judged:
+        services.remind(letter_id)
     return letter["status"]
 
 

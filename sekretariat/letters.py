@@ -63,6 +63,8 @@ class Letters:
     blobs: Blobs
     enqueue: Callable[[str], None]
     household: list[Member]
+    # Immediate reminder when a corrected deadline is close (D3); must not raise.
+    remind: Callable[[str], None] = lambda letter_id: None
 
     # Reading
 
@@ -186,6 +188,7 @@ class Letters:
         if deadline is not None:
             confirmed["date"] = deadline.isoformat()
         self._apply(letter_id, letter, user, "CONFIRM_DEADLINE", {"deadline": confirmed})
+        self.remind(letter_id)
 
     def done(self, letter_id: str, user: Member) -> None:
         letter = self._letter(letter_id, user, access.can_close)

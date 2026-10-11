@@ -59,6 +59,8 @@ resource "google_cloud_run_v2_service" "web" {
           BASE_URL              = var.web_base_url
           GOOGLE_CLIENT_ID      = var.google_client_id
           HOUSEHOLD_SECRET      = google_secret_manager_secret.this["household-config"].id
+          SMTP_HOST             = var.smtp_host
+          SMTP_USER             = var.smtp_user
         }
         content {
           name  = env.key
@@ -71,6 +73,16 @@ resource "google_cloud_run_v2_service" "web" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.this["session-secret"].secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "SMTP_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.this["smtp-password"].secret_id
             version = "latest"
           }
         }
@@ -110,7 +122,32 @@ resource "google_cloud_run_v2_job" "jobs" {
       max_retries     = 1
 
       containers {
-        image = var.placeholder_image
+        image   = var.placeholder_image
+        command = ["/app/.venv/bin/python", "-m", "sekretariat.jobs"]
+
+        dynamic "env" {
+          for_each = {
+            PROJECT_ID       = var.project_id
+            BASE_URL         = var.web_base_url
+            HOUSEHOLD_SECRET = google_secret_manager_secret.this["household-config"].id
+            SMTP_HOST        = var.smtp_host
+            SMTP_USER        = var.smtp_user
+          }
+          content {
+            name  = env.key
+            value = env.value
+          }
+        }
+
+        env {
+          name = "SMTP_PASSWORD"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.this["smtp-password"].secret_id
+              version = "latest"
+            }
+          }
+        }
       }
     }
   }
@@ -144,13 +181,13 @@ resource "google_cloud_tasks_queue" "process" {
   depends_on = [google_project_service.this]
 }
 
-# Paused until the reminders job exists (T8).
+# Reminders (T8) every morning.
 resource "google_cloud_scheduler_job" "daily" {
   name      = "daily-jobs"
   region    = var.region
   schedule  = "0 7 * * *"
   time_zone = "Europe/Warsaw"
-  paused    = true
+  paused    = false
 
   http_target {
     http_method = "POST"

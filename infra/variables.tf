@@ -50,3 +50,13 @@ variable "web_base_url" {
   description = "Public URL of the web service, registered in the OAuth client."
   type        = string
 }
+
+variable "smtp_host" {
+  description = "SMTP server of the reminder mailbox (implicit TLS, port 465)."
+  type        = string
+}
+
+variable "smtp_user" {
+  description = "Reminder mailbox address, also the sender; its password is the smtp-password secret."
+  type        = string
+}

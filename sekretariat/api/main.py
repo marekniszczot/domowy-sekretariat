@@ -3,15 +3,19 @@
     uvicorn sekretariat.api.main:app
 
 Required: PROJECT_ID, LETTERS_BUCKET, OCR_PROCESSOR, TASKS_QUEUE, BASE_URL,
-TASKS_SERVICE_ACCOUNT, GOOGLE_CLIENT_ID, SESSION_SECRET and HOUSEHOLD_SECRET (or
-HOUSEHOLD_FILE locally). Optional: REGION (default europe-central2).
+TASKS_SERVICE_ACCOUNT, GOOGLE_CLIENT_ID, SESSION_SECRET, SMTP_HOST, SMTP_USER,
+SMTP_PASSWORD and HOUSEHOLD_SECRET (or HOUSEHOLD_FILE locally). Optional: REGION
+(default europe-central2), SMTP_PORT (default 465).
 """
 
+import logging
 import os
 
 from fastapi import FastAPI
 
 from sekretariat.config import ConfigError, load_household
+
+log = logging.getLogger(__name__)
 
 REQUIRED = (
     "PROJECT_ID",
@@ -22,6 +26,9 @@ REQUIRED = (
     "TASKS_SERVICE_ACCOUNT",
     "GOOGLE_CLIENT_ID",
     "SESSION_SECRET",
+    "SMTP_HOST",
+    "SMTP_USER",
+    "SMTP_PASSWORD",
 )
 
 
@@ -34,10 +41,11 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
     from google import genai
     from google.cloud import dlp_v2, firestore, storage, tasks_v2
 
-    from sekretariat import ocr
+    from sekretariat import mailer, ocr
     from sekretariat.api.app import AppConfig, create_app
     from sekretariat.auth import Sessions, verify_google_token
     from sekretariat.blobs import GcsBlobs
+    from sekretariat.jobs.reminders import remind, today
     from sekretariat.letters import Letters
     from sekretariat.llm import analyze
     from sekretariat.mask import inspect
@@ -47,6 +55,7 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
 
     project = environ["PROJECT_ID"]
     region = environ.get("REGION", "europe-central2")
+    base_url = environ["BASE_URL"].rstrip("/")
     household = load_household(environ)
     store = FirestoreStore(firestore.Client(project=project))
     blobs = GcsBlobs(storage.Client(project=project), environ["LETTERS_BUCKET"])
@@ -59,6 +68,15 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
         environ["BASE_URL"],
         environ["TASKS_SERVICE_ACCOUNT"],
     )
+    smtp = mailer.from_environ(environ)
+
+    def remind_now(letter_id: str) -> None:
+        # Never fails the user's action or the processing task: the daily job retries.
+        try:
+            remind(store, household, smtp, base_url, today(), [letter_id])
+        except Exception:
+            log.exception("immediate reminder for letter %s failed", letter_id)
+
     services = Services(
         store=store,
         blobs=blobs,
@@ -66,18 +84,19 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
         inspect=lambda text: inspect(dlp, project, region, text),
         analyze=lambda text, rules: analyze(gemini, text, rules),
         household=household,
+        remind=remind_now,
     )
     return create_app(
         AppConfig(
-            letters=Letters(store, blobs, queue.enqueue, household),
+            letters=Letters(store, blobs, queue.enqueue, household, remind_now),
             household=household,
             sessions=Sessions(environ["SESSION_SECRET"]),
             google_client_id=environ["GOOGLE_CLIENT_ID"],
             verify_token=verify_google_token,
-            tasks_audience=environ["BASE_URL"].rstrip("/"),
+            tasks_audience=base_url,
             tasks_service_account=environ["TASKS_SERVICE_ACCOUNT"],
             process=lambda letter_id, attempt: process(services, letter_id, attempt),
-            base_url=environ["BASE_URL"].rstrip("/"),
+            base_url=base_url,
         )
     )
 
