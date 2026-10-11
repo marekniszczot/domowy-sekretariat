@@ -1,0 +1,31 @@
+# Household rules for the evaluation set, as the model sees them: members only as
+# OSOBA_n (household.fixture.yaml). Versioned with the cases; an id is never reused
+# for a different rule, because cases point at rules by id (R3-9).
+#
+# "Zajmuje się tym OSOBA_n": SELF when the letter is addressed to that person,
+# FORWARD otherwise.
+rules:
+  - id: R1
+    text: Faktury za prąd, gaz i internet są opłacane stałym zleceniem w banku, nic nie trzeba robić.
+  - id: R2
+    text: Zaległości, wezwania do zapłaty i wypowiedzenia umów od dostawców prądu, gazu i internetu. Zajmuje się tym OSOBA_2.
+  - id: R3
+    text: "Podatki: pisma z urzędu skarbowego i podatek od nieruchomości z urzędu miasta. Zajmuje się tym OSOBA_2."
+  - id: R4
+    text: Pisma z banku o zmianie regulaminu, tabeli opłat albo oprocentowania są tylko do wiadomości.
+  - id: R5
+    text: Ubezpieczenie mieszkania i samochodu, czyli odnowienie polisy i składki. Zajmuje się tym OSOBA_1.
+  - id: R6
+    text: Sprawy zdrowotne OSOBA_3 (wizyty, skierowania, wyniki badań). Zajmuje się tym OSOBA_1.
+  - id: R7
+    text: Każdy dorosły sam załatwia swoje sprawy z pracodawcą i swoje wizyty lekarskie.
+  - id: R8
+    text: Reklamy, oferty handlowe i gazetki są do wyrzucenia.
+  - id: R9
+    text: Zawiadomienia o zebraniach wspólnoty mieszkaniowej i sprawozdania zarządu są tylko do wiadomości.
+  - id: R10
+    text: Zmiana wysokości zaliczek do wspólnoty mieszkaniowej. Zajmuje się tym OSOBA_2.
+  - id: R11
+    text: Pisma z ZUS w sprawie emerytury OSOBA_3. Zajmuje się tym OSOBA_2.
+  - id: R12
+    text: Informacje z ZUS o stanie konta ubezpieczonego są tylko do wiadomości.

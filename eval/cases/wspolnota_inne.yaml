@@ -1,0 +1,142 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+- id: wspolnota-zebranie
+  delivery_date: 2026-10-27
+  expected: {verdict: NONE, rule_id: R9, deadline: null, addressee: jan, sender_type: WSPOLNOTA}
+  text: |
+    Wspólnota Mieszkaniowa Lipowa 7
+    Zarząd Wspólnoty
+    Warszawa, 22 października 2026 r.
+
+    Pan Jan Przykładowy, lokal nr 3
+
+    Zawiadomienie o zebraniu właścicieli lokali
+
+    Zarząd zawiadamia, że coroczne zebranie właścicieli lokali odbędzie się
+    18 listopada 2026 r. o godz. 18:00 w świetlicy przy ul. Lipowej 9.
+    Porządek obrad: sprawozdanie zarządu za 2025 r., plan gospodarczy na 2027 r.,
+    wybór członka zarządu. Projekty uchwał są dostępne u administratora.
+
+- id: wspolnota-zaliczki-ewa
+  delivery_date: 2026-11-20
+  expected: {verdict: FORWARD, rule_id: R10, deadline: 2027-01-01, addressee: ewa, sender_type: WSPOLNOTA}
+  text: |
+    Wspólnota Mieszkaniowa Lipowa 7
+    Administrator: Zarządca Przykład sp. z o.o.
+    Warszawa, 16.11.2026
+
+    Pani Ewa Przykładowa, lokal nr 3
+
+    Zawiadomienie o zmianie wysokości zaliczek
+
+    Na podstawie uchwały nr 7/2026 informujemy, że od 1 stycznia 2027 r. miesięczna
+    zaliczka na koszty zarządu i fundusz remontowy dla lokalu nr 3 wynosi 512,40 zł
+    (dotychczas 468,90 zł). Prosimy o zmianę kwoty zlecenia stałego od tej daty.
+
+- id: wspolnota-sprawozdanie
+  delivery_date: 2026-04-20
+  expected: {verdict: NONE, rule_id: R9, deadline: null, addressee: ewa, sender_type: WSPOLNOTA}
+  text: |
+    Wspólnota Mieszkaniowa Lipowa 7
+    Warszawa, 15 kwietnia 2026 r.
+
+    Pani Ewa Przykładowa, lokal nr 3
+
+    Sprawozdanie finansowe zarządu za 2025 rok
+
+    W załączeniu przekazujemy sprawozdanie z działalności zarządu za 2025 rok.
+    Przychody wspólnoty wyniosły 412 300 zł, koszty 398 750 zł. Nadwyżka zostaje
+    przeksięgowana na fundusz remontowy. Dokument ma charakter informacyjny.
+
+- id: wspolnota-zaliczki-jan
+  delivery_date: 2026-11-21
+  expected: {verdict: SELF, rule_id: R10, deadline: 2027-01-01, addressee: jan, sender_type: WSPOLNOTA}
+  text: |
+    Wspólnota Mieszkaniowa Lipowa 7
+    Administrator: Zarządca Przykład sp. z o.o.
+    Warszawa, 16.11.2026
+
+    Pan Jan Przykładowy, lokal nr 3
+
+    Zawiadomienie o zmianie wysokości zaliczek
+
+    Od 1 stycznia 2027 r. zaliczka na koszty zarządu nieruchomością wspólną dla
+    lokalu nr 3 wynosi 512,40 zł miesięcznie. Prosimy o dostosowanie przelewów
+    od tej daty.
+
+- id: gazetka-market
+  delivery_date: 2026-10-12
+  expected: {verdict: NONE, rule_id: R8, deadline: null, addressee: null, sender_type: INNY}
+  text: |
+    SUPERMARKET PRZYKŁAD
+
+    Drodzy Mieszkańcy!
+
+    Wielkie otwarcie nowego sklepu przy ul. Handlowej 5 już w sobotę!
+    Kawa ziarnista 1 kg za 39,99 zł, masło 200 g za 5,49 zł, jabłka 1,99 zł/kg.
+    Promocje ważne od 15.10 do 21.10.2026 lub do wyczerpania zapasów.
+
+- id: oferta-operatora
+  delivery_date: 2026-10-14
+  expected: {verdict: NONE, rule_id: R8, deadline: null, addressee: jan, sender_type: TELEKOMUNIKACJA}
+  text: |
+    Telekom Przykładowy S.A.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Panie Janie, przejdź do nas i zyskaj!
+
+    Abonament komórkowy z nielimitowanymi rozmowami i 100 GB internetu za 35 zł
+    miesięcznie przez pierwsze 12 miesięcy. Przeniesienie numeru za darmo.
+    Szczegóły w salonach Telekom i na stronie internetowej.
+
+- id: biblioteka-zwrot
+  delivery_date: 2026-10-15
+  expected: {verdict: FORWARD, rule_id: null, deadline: 2026-10-31, addressee: ewa, sender_type: INNY}
+  text: |
+    Miejska Biblioteka Publiczna w Warszawie
+    Filia nr 21, ul. Książkowa 3
+    Warszawa, 12 października 2026 r.
+
+    Pani Ewa Przykładowa
+    karta czytelnika nr 004512
+
+    Upomnienie
+
+    Termin zwrotu wypożyczonych książek („Lalka”, „Ziemia obiecana”) upłynął
+    30 września 2026 r. Prosimy o ich zwrot do 31.10.2026 r. Za każdy dzień zwłoki
+    naliczana jest opłata 0,20 zł za egzemplarz.
+
+- id: zjazd-absolwentow
+  delivery_date: 2026-10-20
+  expected: {verdict: FORWARD, rule_id: null, deadline: 2026-11-15, addressee: jan, sender_type: INNY}
+  text: |
+    Stowarzyszenie Absolwentów Liceum im. Przykładowego
+
+    Pan Jan Przykładowy
+
+    Szanowny Absolwencie!
+
+    Z okazji 30-lecia matury rocznika 1996 zapraszamy na zjazd absolwentów,
+    który odbędzie się 12 grudnia 2026 r. w auli szkoły. Koszt udziału wynosi
+    150 zł. Prosimy o potwierdzenie udziału i wpłatę do 15.11.2026 r.
+
+- id: sad-wezwanie-swiadek
+  delivery_date: 2026-10-19
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: null, deadline: 2026-11-24, addressee: jan, sender_type: URZAD}
+  text: |
+    Sąd Rejonowy dla Warszawy-Śródmieścia
+    I Wydział Cywilny
+    Sygn. akt I C 1204/26
+    Warszawa, 13 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    WEZWANIE ŚWIADKA
+
+    Sąd wzywa Pana do osobistego stawiennictwa w charakterze świadka na rozprawę
+    w dniu 24 listopada 2026 r. o godz. 10:00, sala 112, w sprawie z powództwa
+    Adama Nowaka przeciwko Spółdzielni Mieszkaniowej Przykład.
+    Niestawiennictwo bez usprawiedliwienia może skutkować nałożeniem grzywny.

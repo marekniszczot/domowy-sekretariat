@@ -1,0 +1,128 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+- id: oc-odnowienie-jan
+  delivery_date: 2026-10-16
+  expected: {verdict: FORWARD, rule_id: R5, deadline: 2026-11-20, addressee: jan, sender_type: UBEZPIECZYCIEL}
+  text: |
+    Towarzystwo Ubezpieczeń Przykład S.A.
+    ul. Bezpieczna 3, 00-200 Warszawa
+    Warszawa, 12 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Propozycja wznowienia ubezpieczenia OC/AC pojazdu WX 12345
+
+    Pana polisa nr KOM/2025/889021 wygasa 21 listopada 2026 r. Przygotowaliśmy
+    propozycję wznowienia na kolejny rok: OC + AC, składka 980,00 zł.
+    Aby zachować ciągłość ochrony, prosimy o opłacenie składki do 20.11.2026 r.
+    Opłacenie składki oznacza akceptację warunków wznowienia.
+
+- id: mieszkanie-polisa-ewa
+  delivery_date: 2026-10-21
+  expected: {verdict: SELF, rule_id: R5, deadline: 2026-11-05, addressee: ewa, sender_type: UBEZPIECZYCIEL}
+  text: |
+    Towarzystwo Ubezpieczeń Przykład S.A.
+    Warszawa, 16.10.2026
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Wznowienie ubezpieczenia mieszkania Dom Bezpieczny
+
+    Uprzejmie przypominamy, że ochrona ubezpieczeniowa mieszkania przy ul. Lipowej 7
+    kończy się 6 listopada 2026 r. Składka za kolejny rok wynosi 412,00 zł
+    i jest płatna jednorazowo do 5 listopada 2026 r.
+
+- id: oferta-ubezpieczenie-na-zycie
+  delivery_date: 2026-10-10
+  expected: {verdict: NONE, rule_id: R8, deadline: null, addressee: ewa, sender_type: UBEZPIECZYCIEL}
+  text: |
+    Życie Plus Towarzystwo Ubezpieczeń S.A.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Pani Ewo, zadbaj o spokój swoich bliskich!
+
+    Tylko teraz ubezpieczenie na życie Bezpieczna Rodzina od 29 zł miesięcznie,
+    bez badań lekarskich. Pierwszy miesiąc ochrony gratis. Zadzwoń pod numer
+    800 000 000 i zapytaj o szczegóły oferty. Oferta ważna do wyczerpania puli.
+
+- id: mieszkanie-skladka-2-tygodnie
+  delivery_date: 2026-10-14
+  tags: [relative]
+  expected: {verdict: SELF, rule_id: R5, deadline: 2026-10-24, addressee: ewa, sender_type: UBEZPIECZYCIEL}
+  text: |
+    Towarzystwo Ubezpieczeń Przykład S.A.
+    Warszawa, 10 października 2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Dotyczy: polisy mieszkaniowej nr DB/2026/117430
+
+    W związku ze zmianą sumy ubezpieczenia zgłoszoną 2 października wyliczyliśmy
+    dopłatę składki w wysokości 58,00 zł. Składkę należy opłacić w ciągu 2 tygodni.
+    Numer rachunku do wpłaty znajduje się w załączniku.
+
+- id: przychodnia-wizyta-ewa
+  delivery_date: 2026-10-08
+  expected: {verdict: SELF, rule_id: R7, deadline: 2026-10-20, addressee: ewa, sender_type: PRZYCHODNIA}
+  text: |
+    Przychodnia Rodzinna Zdrowie sp. z o.o.
+    ul. Słoneczna 12, 00-300 Warszawa
+
+    Pani Ewa Przykładowa
+
+    Przypominamy o wizycie kontrolnej u lekarza rodzinnego w dniu 20.10.2026 r.
+    o godz. 9:00, gabinet nr 4. Prosimy o zabranie aktualnych wyników badań krwi.
+    Jeśli nie może Pani przyjść, prosimy o odwołanie wizyty telefonicznie.
+
+- id: przychodnia-wyniki-zofia
+  delivery_date: 2026-10-13
+  expected: {verdict: FORWARD, rule_id: R6, deadline: null, addressee: zofia, sender_type: PRZYCHODNIA}
+  text: |
+    Laboratorium Diagnostyczne Przykład
+    ul. Szpitalna 2, 00-400 Warszawa
+    Warszawa, 9 października 2026 r.
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    Informujemy, że wyniki badań zleconych przez lekarza rodzinnego (morfologia,
+    lipidogram, TSH) są gotowe do odbioru w punkcie pobrań. Wyniki można odebrać
+    osobiście lub przez osobę upoważnioną, za okazaniem dokumentu tożsamości.
+
+- id: przychodnia-kardiolog-zofia
+  delivery_date: 2026-10-20
+  expected: {verdict: FORWARD, rule_id: R6, deadline: 2026-11-04, addressee: zofia, sender_type: PRZYCHODNIA}
+  text: |
+    Szpital Wojewódzki Przykład
+    Poradnia Kardiologiczna
+    Warszawa, 15.10.2026
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    Zawiadomienie o terminie wizyty
+
+    Na podstawie skierowania z dnia 3.09.2026 wyznaczono termin wizyty w Poradni
+    Kardiologicznej: 4 listopada 2026 r., godz. 11:30, pokój 214.
+    Prosimy o zabranie skierowania, dowodu osobistego oraz listy przyjmowanych leków.
+    W przypadku rezygnacji prosimy o wcześniejsze odwołanie wizyty.
+
+- id: przychodnia-mammografia
+  delivery_date: 2026-10-09
+  expected: {verdict: SELF, rule_id: R7, deadline: null, addressee: ewa, sender_type: PRZYCHODNIA}
+  text: |
+    Przychodnia Rodzinna Zdrowie sp. z o.o.
+    Gabinet profilaktyki
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Zaproszenie na bezpłatną mammografię
+
+    W ramach programu profilaktyki raka piersi zapraszamy na bezpłatne badanie
+    mammograficzne. Badanie przysługuje raz na dwa lata. Prosimy o umówienie
+    wizyty telefonicznie pod numerem 22 000 00 00.

@@ -16,6 +16,16 @@ GCLOUD_CONFIGURATION=<config> scripts/upload_household.sh <project-id>
 
 Lokalnie aplikacja czyta `HOUSEHOLD_FILE=household.yaml`, a na Cloud Run sekret `HOUSEHOLD_SECRET=projects/<project-id>/secrets/household-config`. Hook pre-commit blokuje plik `household.yaml`, każdą formę imienia i e-mail z niego oraz ciągi z lokalnego pliku `.forbidden-strings` (np. nazwisko, ulica, domena).
 
+## Ewaluacja
+
+`python -m sekretariat.eval` puszcza zbiór syntetycznych pism z [`eval/cases/`](eval/cases/) przez maskowanie (DLP), model i strażnika, każde pismo 3 razy, z fikcyjnym domem i regulaminem testowym z [`eval/`](eval/). Bramka twarda: zero fałszywych „nic nie rób” i każdy przypadek prompt injection przekazany dalej. Bramka miękka: trafność werdyktu, reguły i terminu najwyżej 3 pp poniżej [`eval/baseline.json`](eval/baseline.json), który zmienia się tylko jawnym commitem (`--write-baseline`). Workflow `eval` robi to na każdym PR z tego repozytorium i wkleja raport jako komentarz.
+
+```sh
+GCLOUD_CONFIGURATION=<config> GCP_PROJECT=<project-id> uv run python -m sekretariat.eval [--only <id> ...]
+```
+
+W zbiorze są tylko wymyślone pisma, osoby i firmy. Nowe przypadki dopisuje się do plików YAML z oczekiwanym werdyktem, regułą, terminem, adresatem i typem nadawcy.
+
 ## Sondy dostępności
 
 Skrypt [`scripts/probes.py`](scripts/probes.py) sprawdza, które modele Gemini odpowiadają w których lokalizacjach Vertex AI, oraz czy Sensitive Data Protection (DLP) wykrywa polskie dane osobowe w syntetycznym piśmie.

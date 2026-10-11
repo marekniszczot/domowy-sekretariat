@@ -1,0 +1,148 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+- id: praca-aneks-wynagrodzenie
+  delivery_date: 2026-10-23
+  expected: {verdict: SELF, rule_id: R7, deadline: 2026-11-30, addressee: ewa, sender_type: PRACODAWCA}
+  text: |
+    Przykład Logistyka sp. z o.o.
+    Dział Kadr i Płac
+    Warszawa, 20 października 2026 r.
+
+    Pani Ewa Przykładowa
+
+    W związku z przeglądem wynagrodzeń przesyłamy aneks nr 3 do umowy o pracę,
+    podwyższający wynagrodzenie zasadnicze od 1 grudnia 2026 r. Prosimy o podpisanie
+    aneksu i zwrot jednego egzemplarza do Działu Kadr do 30.11.2026 r.
+
+- id: praca-badania-okresowe
+  delivery_date: 2026-10-16
+  expected: {verdict: SELF, rule_id: R7, deadline: 2026-12-15, addressee: jan, sender_type: PRACODAWCA}
+  text: |
+    Przykład Software S.A.
+    Dział Personalny
+    Kraków, 13.10.2026
+
+    Pan Jan Przykładowy
+
+    Skierowanie na okresowe badania lekarskie
+
+    Pana orzeczenie lekarskie traci ważność z końcem roku. Kierujemy Pana na badania
+    okresowe w przychodni medycyny pracy Medyk, ul. Zdrowa 1. Badania należy wykonać
+    do 15.12.2026 r., a orzeczenie dostarczyć do Działu Personalnego.
+
+- id: praca-dokumenty-5-dni-roboczych
+  delivery_date: 2026-10-09
+  tags: [relative]
+  expected: {verdict: SELF, rule_id: R7, deadline: 2026-10-14, addressee: jan, sender_type: PRACODAWCA}
+  text: |
+    Przykład Software S.A.
+    Dział Personalny
+    Kraków, 6 października 2026 r.
+
+    Pan Jan Przykładowy
+
+    W związku z aktualizacją danych do programu PPK prosimy o uzupełnienie
+    załączonego formularza i odesłanie go w ciągu 5 dni roboczych od otrzymania
+    niniejszego pisma.
+
+- id: praca-aneks-bez-daty
+  delivery_date: 2026-10-12
+  tags: [relative]
+  expected: {verdict: SELF, rule_id: R7, deadline: 2026-10-22, addressee: ewa, sender_type: PRACODAWCA}
+  text: |
+    Przykład Logistyka sp. z o.o.
+    Dział Kadr i Płac
+
+    Pani Ewa Przykładowa
+
+    Przesyłamy porozumienie zmieniające miejsce wykonywania pracy na pracę hybrydową.
+    Prosimy o odesłanie podpisanego porozumienia w terminie 10 dni.
+
+    Z poważaniem
+    Kierownik Działu Kadr
+
+- id: zus-waloryzacja-zofia
+  delivery_date: 2026-03-04
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: R11, deadline: null, addressee: zofia, sender_type: ZUS}
+  text: |
+    ZAKŁAD UBEZPIECZEŃ SPOŁECZNYCH
+    Oddział w Warszawie
+    Warszawa, 27.02.2026
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    DECYZJA o waloryzacji emerytury
+
+    Od 1 marca 2026 r. emerytura po waloryzacji wynosi 3 412,18 zł brutto.
+    Świadczenie będzie wypłacane jak dotychczas, w 10. dniu każdego miesiąca.
+
+    Od tej decyzji przysługuje odwołanie do Sądu Okręgowego w Warszawie
+    w terminie miesiąca od dnia jej doręczenia.
+
+- id: zus-stan-konta-ewa
+  delivery_date: 2026-07-14
+  expected: {verdict: NONE, rule_id: R12, deadline: null, addressee: ewa, sender_type: ZUS}
+  text: |
+    Zakład Ubezpieczeń Społecznych
+    Warszawa, 8 lipca 2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Informacja o stanie konta ubezpieczonego na dzień 31 grudnia 2025 r.
+
+    Kwota zwaloryzowanych składek na ubezpieczenie emerytalne: 241 118,52 zł.
+    Hipotetyczna wysokość emerytury w wieku 60 lat: 2 940,00 zł.
+    Informacja ma charakter wyłącznie informacyjny.
+
+- id: zus-stan-konta-jan
+  delivery_date: 2026-07-15
+  expected: {verdict: NONE, rule_id: R12, deadline: null, addressee: jan, sender_type: ZUS}
+  text: |
+    Zakład Ubezpieczeń Społecznych
+    Oddział w Krakowie
+
+    Pan Jan Przykładowy
+
+    Informacja o stanie konta ubezpieczonego (IOSK) na dzień 31.12.2025
+
+    Suma składek zaewidencjonowanych na koncie: 312 004,11 zł.
+    Kapitał początkowy: nie dotyczy.
+    W razie wątpliwości co do danych prosimy o kontakt z dowolną placówką ZUS.
+
+- id: zus-zaswiadczenie-30-dni
+  delivery_date: 2026-10-02
+  tags: [relative]
+  expected: {verdict: FORWARD, rule_id: R11, deadline: 2026-11-01, addressee: zofia, sender_type: ZUS}
+  text: |
+    Zakład Ubezpieczeń Społecznych
+    Oddział w Warszawie
+    Warszawa, 25 września 2026 r.
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    Dotyczy: emerytury, nr świadczenia 12345678
+
+    Prosimy o przedłożenie zaświadczenia o wysokości przychodu osiągniętego
+    z tytułu umowy zlecenia w okresie od stycznia do sierpnia 2026 r. Zaświadczenie
+    należy złożyć w terminie 30 dni od dnia otrzymania niniejszego pisma.
+
+- id: zus-miesiac-od-doreczenia
+  delivery_date: 2026-10-31
+  tags: [relative]
+  expected: {verdict: FORWARD, rule_id: R11, deadline: 2026-11-30, addressee: zofia, sender_type: ZUS}
+  text: |
+    Zakład Ubezpieczeń Społecznych
+    Oddział w Warszawie
+    Warszawa, 26.10.2026
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    Dotyczy: emerytury
+
+    W celu ustalenia prawa do dodatku pielęgnacyjnego prosimy o dostarczenie
+    orzeczenia lekarza orzecznika lub zaświadczenia lekarskiego na druku OL-9
+    w terminie 1 miesiąca od dnia doręczenia niniejszego pisma.

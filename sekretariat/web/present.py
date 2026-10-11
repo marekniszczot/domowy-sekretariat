@@ -62,6 +62,7 @@ _UNSURE_REASONS = [
     ({"LOW_CONFIDENCE"}, "niska pewność"),
     ({"UNKNOWN_RULE", "MISSING_RULE"}, "żadna zasada nie pasuje"),
     ({"BAD_ADDRESSEE"}, "adresat spoza domu"),
+    ({"INJECTION"}, "pismo zawiera polecenia dla programu"),
 ]
 
 _MONTHS = ["stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca", "lipca",

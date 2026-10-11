@@ -1,0 +1,103 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+- id: bank-tabela-oplat
+  delivery_date: 2026-10-09
+  expected: {verdict: NONE, rule_id: R4, deadline: null, addressee: ewa, sender_type: BANK}
+  text: |
+    Bank Przykładowy S.A.
+    al. Finansowa 10, 00-120 Warszawa
+
+    Warszawa, 5 października 2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Szanowna Pani,
+    informujemy, że od 1 grudnia 2026 r. obowiązuje nowa Tabela opłat i prowizji
+    dla rachunków osobistych. Opłata za prowadzenie konta Konto Proste pozostaje
+    bez zmian i wynosi 0 zł. Zmienia się opłata za wypłatę gotówki z obcych
+    bankomatów za granicą: z 5 zł na 7 zł.
+
+    Nie musi Pani podejmować żadnych działań. Pełna treść tabeli jest dostępna
+    w oddziałach i na stronie banku.
+
+    Z wyrazami szacunku
+    Bank Przykładowy S.A.
+
+- id: bank-oprocentowanie
+  delivery_date: 2026-10-14
+  expected: {verdict: NONE, rule_id: R4, deadline: null, addressee: jan, sender_type: BANK}
+  text: |
+    Bank Przykładowy S.A.
+    Warszawa, 9.10.2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Zmiana oprocentowania rachunku oszczędnościowego
+
+    Uprzejmie informujemy, że w związku z decyzją Rady Polityki Pieniężnej
+    oprocentowanie rachunku oszczędnościowego Oszczędzam Plus zmienia się
+    z 3,10% na 2,85% w skali roku. Nowa stawka będzie obowiązywać od 1 listopada
+    2026 r. Pozostałe warunki rachunku się nie zmieniają.
+
+    Pismo ma charakter informacyjny.
+
+- id: bank-komornik-zajecie
+  delivery_date: 2026-10-07
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: null, deadline: null, addressee: jan, sender_type: BANK}
+  text: |
+    Bank Przykładowy S.A.
+    Departament Zajęć Egzekucyjnych
+    Warszawa, 2 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Zawiadomienie o zajęciu rachunku bankowego
+
+    Informujemy, że na podstawie zawiadomienia Komornika Sądowego przy Sądzie
+    Rejonowym dla Warszawy-Mokotowa, sygn. akt KM 1520/26, dokonaliśmy zajęcia
+    środków na Pana rachunku nr 12 1020 0000 0000 0000 0000 0000 do kwoty
+    3 410,22 zł. Kwota wolna od zajęcia jest wypłacana zgodnie z przepisami.
+
+    W sprawie zajęcia prosimy kontaktować się bezpośrednio z kancelarią komorniczą.
+
+- id: bank-karta-splata
+  delivery_date: 2026-10-20
+  expected: {verdict: FORWARD, rule_id: null, deadline: 2026-11-15, addressee: ewa, sender_type: BANK}
+  text: |
+    Bank Przykładowy S.A.
+    Centrum Kart Kredytowych
+    Warszawa, 15 października 2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Zestawienie operacji karty kredytowej Visa Classic za okres 16.09–15.10.2026
+
+    Zadłużenie na koniec okresu: 2 315,40 zł
+    Minimalna kwota do spłaty: 115,77 zł
+    Termin spłaty minimalnej kwoty: 15.11.2026 r.
+
+    Spłata całego zadłużenia do terminu spłaty pozwala uniknąć odsetek.
+
+- id: bank-zaswiadczenie-7-dni
+  delivery_date: 2026-10-06
+  tags: [relative]
+  expected: {verdict: FORWARD, rule_id: null, deadline: 2026-10-08, addressee: jan, sender_type: BANK}
+  text: |
+    Bank Przykładowy S.A.
+    Departament Kredytów Hipotecznych
+    Warszawa, 1 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Dotyczy: umowy kredytu hipotecznego nr KH/2021/004512
+
+    Zgodnie z § 9 umowy prosimy o dostarczenie aktualnego zaświadczenia
+    o zatrudnieniu i wysokości dochodów z ostatnich 3 miesięcy. Dokumenty prosimy
+    przesłać w ciągu 7 dni od daty wystawienia niniejszego pisma.
+
+    Brak dokumentów może skutkować podwyższeniem marży kredytu o 0,5 p.p.
