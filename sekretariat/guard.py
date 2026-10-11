@@ -7,6 +7,7 @@
       ├─ rule_id unknown ──────────────────────────────────▶ FORWARD [UNKNOWN_RULE]
       ├─ rule_id null with NONE or SELF ───────────────────▶ FORWARD [MISSING_RULE]
       ├─ confidence < threshold ───────────────────────────▶ FORWARD [LOW_CONFIDENCE]
+      ├─ the letter talks to the system (injection) ───────▶ FORWARD [INJECTION]
       ├─ escalation entry in masked text ──────────────────▶ FORWARD [ESCALATION]
       └─ none of the above ────────────────────────────────▶ model verdict
 
@@ -17,6 +18,10 @@ Quote normalization (same for text and quote): words split by a hyphen at a line
 end are joined, whitespace runs become one space, case is folded, typographic
 quotes and dashes become ASCII. Each normalized character remembers its position
 in the masked text, so a found quote yields an exact masked span for highlighting.
+
+Injection signs: words a letter has no reason to use, because they are ours: the
+answer's field names, the prompt's tags, rule ids („reguła R4”), and requests to
+ignore instructions. The model is told the same, the guard does not rely on it.
 
 Escalation entries are word prefixes: "urz skarbow" matches "Urzędu Skarbowego",
 "komorni" matches "komornika" and "komorniczej".
@@ -43,6 +48,15 @@ _PUNCTUATION = str.maketrans({"„": '"', "”": '"', "“": '"', "‚": "'", "�
                               "–": "-", "—": "-", " ": " "})  # fmt: skip
 _LINE_END_HYPHEN = re.compile(r"(?<=\w)-[ \t]*\r?\n\s*(?=\w)")
 _OSOBA = re.compile(r"^OSOBA_(\d+)$")
+# Matched on the normalized (case-folded) text.
+_INJECTION = re.compile(
+    r"\b(verdict|rule_id|rule_trigger_quote|deadline_type|sender_type|confidence)\b"
+    r"|</?\s*(pismo|regulamin)\s*>"
+    r"|\breguł\w*\s+r\d+\b"
+    r"|\b(ignore|disregard)\W+(\w+\W+){0,3}instructions"
+    r"|\bzignoruj\w*\W+(\w+\W+){0,3}(instrukcj|polece|zasad|regulamin)"
+    r"|\bdla\s+(systemu|systemów|modelu|asystenta|sztucznej\s+inteligencji)\b"
+)
 
 
 class Reason(StrEnum):
@@ -52,6 +66,7 @@ class Reason(StrEnum):
     UNKNOWN_RULE = "UNKNOWN_RULE"
     MISSING_RULE = "MISSING_RULE"
     LOW_CONFIDENCE = "LOW_CONFIDENCE"
+    INJECTION = "INJECTION"
     ESCALATION = "ESCALATION"
 
 
@@ -73,12 +88,12 @@ def guard(
     escalation: tuple[str, ...] = DEFAULT_ESCALATION,
     confidence_threshold: float = DEFAULT_CONFIDENCE_THRESHOLD,
 ) -> GuardResult:
-    normalized, _ = normalize(masked_text)
-    hits = tuple(entry for entry in escalation if _escalation_pattern(entry).search(normalized))
+    hits = escalation_hits(masked_text, escalation)
     escalation_reasons = (Reason.ESCALATION,) if hits else ()
+    injection_reasons = (Reason.INJECTION,) if injection_signs(masked_text) else ()
 
     if isinstance(outcome, LlmFailure):
-        reasons = (Reason.MODEL_FAILED, *escalation_reasons)
+        reasons = (Reason.MODEL_FAILED, *injection_reasons, *escalation_reasons)
         return GuardResult(Verdict.FORWARD, reasons, None, escalation_hits=hits)
 
     reasons: list[Reason] = []
@@ -105,6 +120,7 @@ def guard(
 
     if outcome.confidence < confidence_threshold:
         reasons.append(Reason.LOW_CONFIDENCE)
+    reasons.extend(injection_reasons)
     reasons.extend(escalation_reasons)
 
     reasons = tuple(dict.fromkeys(reasons))
@@ -152,6 +168,16 @@ def find_quote(masked_text: str, quote: str) -> tuple[int, int] | None:
     if at < 0:
         return None
     return index[at], index[at + len(needle) - 1] + 1
+
+
+def injection_signs(masked_text: str) -> bool:
+    normalized, _ = normalize(masked_text)
+    return _INJECTION.search(normalized) is not None
+
+
+def escalation_hits(masked_text: str, escalation: tuple[str, ...]) -> tuple[str, ...]:
+    normalized, _ = normalize(masked_text)
+    return tuple(entry for entry in escalation if _escalation_pattern(entry).search(normalized))
 
 
 def _escalation_pattern(entry: str) -> re.Pattern[str]:

@@ -1,0 +1,100 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+- id: podatek-nieruchomosci-ewa
+  delivery_date: 2026-02-02
+  tags: [two-deadlines]
+  expected: {verdict: FORWARD, rule_id: R3, deadline: 2026-03-15, addressee: ewa, sender_type: URZAD}
+  text: |
+    PREZYDENT MIASTA PRZYKŁADOWO
+    Wydział Podatków i Opłat
+    Przykładowo, dnia 14-01-2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    DECYZJA nr PN.3120.4471.2026
+    w sprawie wymiaru podatku od nieruchomości na 2026 rok
+
+    Ustala się wysokość podatku od nieruchomości na 2026 rok w kwocie 112,00 zł.
+    Podatek płatny jest w ratach:
+    I rata 28,00 zł do: 15-03-2026
+    II rata 28,00 zł do: 15-05-2026
+    III rata 28,00 zł do: 15-09-2026
+    IV rata 28,00 zł do: 15-11-2026
+
+    POUCZENIE
+    Od niniejszej decyzji służy odwołanie do Samorządowego Kolegium Odwoławczego
+    za pośrednictwem Prezydenta Miasta w terminie 14 dni od dnia jej doręczenia.
+
+- id: podatek-nieruchomosci-jan
+  delivery_date: 2026-02-03
+  tags: [two-deadlines]
+  expected: {verdict: SELF, rule_id: R3, deadline: 2026-03-15, addressee: jan, sender_type: URZAD}
+  text: |
+    URZĄD MIASTA PRZYKŁADOWO
+    Referat Wymiaru Podatków
+    Przykładowo, 20 stycznia 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    DECYZJA w sprawie wymiaru podatku od nieruchomości na rok 2026
+
+    Wysokość podatku od nieruchomości (garaż, ul. Lipowa 7) wynosi 64,00 zł,
+    płatne w czterech ratach po 16,00 zł w terminach: 15 marca, 15 maja,
+    15 września i 15 listopada 2026 r.
+
+    Od decyzji przysługuje odwołanie do Samorządowego Kolegium Odwoławczego
+    w terminie 14 dni od dnia doręczenia, za pośrednictwem organu, który ją wydał.
+
+- id: us-wezwanie-wyjasnienia
+  delivery_date: 2026-10-09
+  tags: [escalation, relative]
+  expected: {verdict: FORWARD, rule_id: R3, deadline: 2026-10-16, addressee: jan, sender_type: URZAD}
+  text: |
+    NACZELNIK URZĘDU SKARBOWEGO W PRZYKŁADOWIE
+    ul. Podatkowa 5, 81-002 Przykładowo
+    Przykładowo, 5 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    WEZWANIE
+
+    Na podstawie art. 155 Ordynacji podatkowej wzywam do złożenia wyjaśnień
+    dotyczących ulgi termomodernizacyjnej wykazanej w zeznaniu PIT-37 za 2025 rok
+    oraz do przedłożenia faktur potwierdzających poniesione wydatki, w terminie
+    7 dni od dnia doręczenia niniejszego wezwania.
+
+- id: us-zwrot-nadplaty
+  delivery_date: 2026-05-12
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: R3, deadline: null, addressee: ewa, sender_type: URZAD}
+  text: |
+    Urząd Skarbowy w Przykładowie
+    Przykładowo, 6 maja 2026 r.
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    Zawiadomienie o zwrocie nadpłaty
+
+    Uprzejmie informuję, że nadpłata podatku dochodowego od osób fizycznych za
+    2025 rok w kwocie 1 240,00 zł została przekazana na rachunek bankowy wskazany
+    w zeznaniu rocznym. Pismo ma charakter informacyjny.
+
+- id: urzad-odbior-dowodu
+  delivery_date: 2026-10-13
+  expected: {verdict: FORWARD, rule_id: null, deadline: null, addressee: ewa, sender_type: URZAD}
+  text: |
+    Urząd Miasta Przykładowo
+    Wydział Spraw Obywatelskich
+    Przykładowo, 8.10.2026
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    Zawiadomienie
+
+    Informujemy, że nowy dowód osobisty jest gotowy do odbioru w Wydziale Spraw
+    Obywatelskich, ul. Ratuszowa 1, pokój 12, od poniedziałku do piątku w godzinach
+    8:00–16:00. Przy odbiorze należy okazać dotychczasowy dowód osobisty.

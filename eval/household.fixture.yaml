@@ -1,0 +1,20 @@
+# Fictional household for the evaluation set. Never a real one: cases are public.
+# Order defines OSOBA_n: Ewa = OSOBA_1, Jan = OSOBA_2, Zofia = OSOBA_3.
+members:
+  - id: ewa
+    role: domownik
+    emails: [ewa@example.com]
+    first_name_forms: [Ewa, Ewy, Ewie, Ewę, Ewą, Ewo]
+    surname_forms: [Przykładowa, Przykładowej, Przykładową]
+
+  - id: jan
+    role: koordynator
+    emails: [jan@example.com]
+    first_name_forms: [Jan, Jana, Janowi, Janem, Janie]
+    surname_forms: [Przykładowy, Przykładowego, Przykładowemu, Przykładowym]
+
+  - id: zofia
+    role: bez_konta
+    display_name: Babcia Zosia
+    first_name_forms: [Zofia, Zofii, Zofię, Zofią, Zofio]
+    surname_forms: [Wzorcowa, Wzorcowej, Wzorcową]
