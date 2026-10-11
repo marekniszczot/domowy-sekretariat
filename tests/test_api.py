@@ -164,8 +164,34 @@ def test_browser_posts_from_other_origins_are_refused(app_and_calls, origin):
 def test_configured_base_url_is_the_expected_origin(app_and_calls):
     app, _ = app_and_calls
     app.state.config.base_url = AUDIENCE
-    assert client(app).post("/logout").status_code == 403
-    assert client(app, origin=AUDIENCE).post("/logout").status_code == 303
+
+    def on_base_url(origin):
+        return TestClient(
+            app, base_url=AUDIENCE, follow_redirects=False, headers={"Origin": origin}
+        )
+
+    assert on_base_url(ORIGIN).post("/logout").status_code == 403
+    assert on_base_url(AUDIENCE).post("/logout").status_code == 303
+
+
+def test_other_hostnames_redirect_to_the_base_url(app_and_calls):
+    app, _ = app_and_calls
+    app.state.config.base_url = AUDIENCE
+    http = client(app)  # http://testserver, as Cloud Run's second hostname
+    response = http.get("/pisma/L1?duplikat=1")
+    assert response.status_code == 301
+    assert response.headers["location"] == f"{AUDIENCE}/pisma/L1?duplikat=1"
+    response = http.post("/logout")
+    assert response.status_code == 308 and response.headers["location"] == f"{AUDIENCE}/logout"
+
+
+def test_health_and_internal_calls_answer_on_any_hostname(app_and_calls):
+    app, calls = app_and_calls
+    app.state.config.base_url = AUDIENCE
+    http = client(app)
+    assert http.get("/health").status_code == 200
+    assert http.post("/internal/process/L1", headers=tasks_token()).status_code == 200
+    assert calls == [("L1", 0)]
 
 
 def test_pages_need_a_session_and_logout_clears_it(app_and_calls):

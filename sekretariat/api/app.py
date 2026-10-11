@@ -6,6 +6,10 @@ every access check lives in letters.py / access.py.
 Browser POSTs must come from our own origin (CSRF, on top of SameSite=Lax), except
 /auth/google, which Google posts from its own page with a double-submit token, and
 /internal/*, which Cloud Tasks calls with an OIDC token.
+
+Cloud Run answers on more than one hostname. Every request on another host than
+BASE_URL is redirected there (except /internal/* and /health), because sign-in
+only works on one host: the Google CSRF cookie belongs to the page's own domain.
 """
 
 import hmac
@@ -14,6 +18,7 @@ import mimetypes
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from fastapi import Depends, FastAPI, Form, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, RedirectResponse
@@ -72,6 +77,25 @@ def create_app(config: AppConfig) -> FastAPI:
             if request.headers.get("origin") != expected:
                 log.info("POST %s refused: wrong origin", path)
                 return PlainTextResponse("forbidden", status_code=403)
+        return await call_next(request)
+
+    # Added last, so it runs first: other hosts never reach the origin check.
+    @app.middleware("http")
+    async def canonical_host(request: Request, call_next):
+        path = request.url.path
+        canonical = urlsplit(config.base_url).netloc
+        if (
+            canonical
+            and request.url.netloc != canonical
+            and not path.startswith("/internal/")
+            and path != "/health"
+        ):
+            target = f"{config.base_url}{path}"
+            if request.url.query:
+                target += f"?{request.url.query}"
+            # 308 keeps the method and body of a POST; 301 for reads.
+            status = 301 if request.method in {"GET", "HEAD"} else 308
+            return RedirectResponse(target, status_code=status)
         return await call_next(request)
 
     @app.get("/health")
