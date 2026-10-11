@@ -49,8 +49,9 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
     from sekretariat.letters import Letters
     from sekretariat.llm import analyze
     from sekretariat.mask import inspect
+    from sekretariat.notices import schedule, send
     from sekretariat.pipeline import Services, process
-    from sekretariat.store import FirestoreStore
+    from sekretariat.store import FirestoreStore, now
     from sekretariat.tasks import TaskQueue
 
     project = environ["PROJECT_ID"]
@@ -77,6 +78,13 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
         except Exception:
             log.exception("immediate reminder for letter %s failed", letter_id)
 
+    def notify(member_id: str) -> None:
+        # Never fails the user's action or the processing task.
+        try:
+            schedule(store, queue.notify, member_id, now())
+        except Exception:
+            log.exception("notice for %s could not be scheduled", member_id)
+
     services = Services(
         store=store,
         blobs=blobs,
@@ -85,10 +93,11 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
         analyze=lambda text, rules: analyze(gemini, text, rules),
         household=household,
         remind=remind_now,
+        notify=notify,
     )
     return create_app(
         AppConfig(
-            letters=Letters(store, blobs, queue.enqueue, household, remind_now),
+            letters=Letters(store, blobs, queue.enqueue, household, remind_now, notify),
             household=household,
             sessions=Sessions(environ["SESSION_SECRET"]),
             google_client_id=environ["GOOGLE_CLIENT_ID"],
@@ -97,6 +106,9 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
             tasks_service_account=environ["TASKS_SERVICE_ACCOUNT"],
             process=lambda letter_id, attempt: process(services, letter_id, attempt),
             base_url=base_url,
+            send_notices=lambda member_id: send(
+                store, household, smtp, base_url, member_id, now(), today()
+            ),
         )
     )
 

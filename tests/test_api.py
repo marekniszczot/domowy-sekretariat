@@ -76,6 +76,12 @@ def app_and_calls():
             raise ConnectionError("down")
         return "verdict"
 
+    def send_notices(member_id):
+        calls.append(("notify", member_id))
+        if member_id == "boom":
+            raise ConnectionError("smtp down")
+        return 2
+
     config = AppConfig(
         letters=Letters(MemoryStore(), MemoryBlobs(), lambda _: None, HOUSE),
         household=HOUSE,
@@ -86,6 +92,7 @@ def app_and_calls():
         tasks_service_account=TASKS_SA,
         process=process,
         secure_cookies=False,
+        send_notices=send_notices,
     )
     app = create_app(config)
 
@@ -235,6 +242,22 @@ def test_internal_process_failure_asks_for_retry(app_and_calls):
 def test_internal_process_refuses_other_callers(app_and_calls, headers):
     app, calls = app_and_calls
     assert client(app).post("/internal/process/L1", headers=headers).status_code == 403
+    assert calls == []
+
+
+def test_internal_notify_sends_and_asks_for_retry_on_error(app_and_calls):
+    app, calls = app_and_calls
+    response = client(app).post("/internal/notify/dom1", headers=tasks_token())
+    assert response.status_code == 200 and response.json() == {"letters": 2}
+    assert client(app).post("/internal/notify/boom", headers=tasks_token()).status_code == 503
+    assert calls == [("notify", "dom1"), ("notify", "boom")]
+
+
+def test_internal_notify_refuses_other_callers(app_and_calls):
+    app, calls = app_and_calls
+    headers = tasks_token(email="someone@p.iam.gserviceaccount.com")
+    assert client(app).post("/internal/notify/dom1", headers=headers).status_code == 403
+    assert client(app).post("/internal/notify/dom1").status_code == 403
     assert calls == []
 
 

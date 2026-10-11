@@ -19,6 +19,7 @@ delivery_date, upload_private):
     quote_spans_masked, quote_spans_raw      for highlighting (D5 step 8)
     deadline {date, basis, confirmed}        D10, D8; always unconfirmed here
     addressee, owner, state, private         D18, DR-5
+    assigned                                 failed only: e-mail to the owner (D6)
 """
 
 import dataclasses
@@ -33,6 +34,7 @@ from sekretariat.guard import guard
 from sekretariat.household import Member, Role
 from sekretariat.llm import LetterAnalysis, LlmFailure, Verdict
 from sekretariat.mask import Finding, MaskResult, Segment, mask
+from sekretariat.notices import FAILED, assigned
 from sekretariat.owners import initial_owner
 from sekretariat.rules import Rule
 from sekretariat.store import Store, now
@@ -55,6 +57,8 @@ class Services:
     household: list[Member]
     # Immediate reminder when the deadline is already close (D3); must not raise.
     remind: Callable[[str], None] = lambda letter_id: None
+    # E-mail to the owner of a letter that could not be analyzed (D6); must not raise.
+    notify: Callable[[str], None] = lambda member_id: None
 
 
 class RetryableError(Exception):
@@ -82,6 +86,7 @@ def process(services: Services, letter_id: str, attempt: int = 0) -> str:
                 "letter %s failed at %s: %s", letter_id, letter["status"], type(error).__name__
             )
             letter |= _fail(services, letter_id, letter)
+            services.notify(letter["owner"])
         else:
             log.warning("letter %s: retry after %s", letter_id, type(error).__name__)
             raise
@@ -178,6 +183,7 @@ def _fail(services: Services, letter_id: str, letter: dict) -> dict:
             "deadline": None,
             "addressee": None,
             "owner": owner.owner,
+            "assigned": assigned(owner.owner, None, now(), FAILED),
             "state": "open",
             "private": bool(letter.get("upload_private")),
             "processed_at": now(),

@@ -215,6 +215,26 @@ def test_reminder_check_once_the_verdict_is_saved():
     assert reminded == [letter_id]
 
 
+def test_failed_analysis_notifies_the_owner():
+    fake = Fake()
+    notified = []
+    fake.services.notify = notified.append
+    letter_id = fake.upload()
+    fake.fail.add("inspect")
+    process(fake.services, letter_id, attempt=MAX_ATTEMPTS - 1)
+    assigned = fake.store.get_letter(letter_id)["assigned"]
+    assert (assigned["to"], assigned["by"], assigned["cause"]) == ("koord", None, "FAILED")
+    assert notified == ["koord"]
+
+
+def test_successful_analysis_notifies_nobody():
+    fake = Fake()
+    notified = []
+    fake.services.notify = notified.append
+    process(fake.services, fake.upload())
+    assert notified == []
+
+
 def test_last_attempt_fails_to_forward():
     fake = Fake()
     letter_id = fake.upload(upload_private=True)

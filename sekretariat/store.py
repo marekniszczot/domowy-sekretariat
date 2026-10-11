@@ -5,6 +5,7 @@
     rules/{id}                   household rules (Rule), ids from settings/rules
     settings/rules               {"next": n}, the rule id counter (never reused)
     settings/escalation          {"entries": [...]}
+    notices/{member id}          {sent_at, scheduled_at}: batching of notices (DR-12)
 
 Clients never touch Firestore directly (security rules deny all); everything goes
 through the API with the service account.
@@ -33,6 +34,8 @@ class Store(Protocol):
     def delete_rule(self, rule_id: str) -> None: ...
     def escalation(self) -> tuple[str, ...]: ...
     def set_escalation(self, entries: list[str]) -> None: ...
+    def notice(self, member_id: str) -> dict[str, Any]: ...
+    def set_notice(self, member_id: str, fields: dict[str, Any]) -> None: ...
 
 
 def now() -> datetime:
@@ -46,6 +49,7 @@ class MemoryStore:
         self._rules = list(rules or [])
         self._rule_counter = 1
         self._escalation = tuple(escalation)
+        self._notices: dict[str, dict[str, Any]] = {}
 
     def create_letter(self, fields):
         letter_id = uuid.uuid4().hex
@@ -89,6 +93,12 @@ class MemoryStore:
 
     def set_escalation(self, entries):
         self._escalation = tuple(entries)
+
+    def notice(self, member_id):
+        return dict(self._notices.get(member_id, {}))
+
+    def set_notice(self, member_id, fields):
+        self._notices.setdefault(member_id, {}).update(fields)
 
 
 class FirestoreStore:
@@ -164,6 +174,14 @@ class FirestoreStore:
     def set_escalation(self, entries):
         settings = self._db.collection(f"{self._prefix}settings")
         settings.document("escalation").set({"entries": list(entries)})
+
+    def notice(self, member_id):
+        snapshot = self._db.collection(f"{self._prefix}notices").document(member_id).get()
+        return snapshot.to_dict() if snapshot.exists else {}
+
+    def set_notice(self, member_id, fields):
+        document = self._db.collection(f"{self._prefix}notices").document(member_id)
+        document.set(fields, merge=True)
 
 
 def _rule_order(rule: Rule):

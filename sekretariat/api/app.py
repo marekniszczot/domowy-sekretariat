@@ -5,7 +5,8 @@ every access check lives in letters.py / access.py.
 
 Browser POSTs must come from our own origin (CSRF, on top of SameSite=Lax), except
 /auth/google, which Google posts from its own page with a double-submit token, and
-/internal/*, which Cloud Tasks calls with an OIDC token.
+/internal/* (letter processing and notices), which Cloud Tasks calls with an OIDC
+token.
 
 Cloud Run answers on more than one hostname. Every request on another host than
 BASE_URL is redirected there (except /internal/* and /health), because sign-in
@@ -55,6 +56,8 @@ class AppConfig:
     process: Callable[[str, int], str]
     base_url: str = ""
     secure_cookies: bool = True
+    # Sends the pending notices of a member (notices.send); raises to be retried.
+    send_notices: Callable[[str], int] = lambda member_id: 0
 
 
 def create_app(config: AppConfig) -> FastAPI:
@@ -154,6 +157,25 @@ def create_app(config: AppConfig) -> FastAPI:
             log.warning("letter %s: %s, will retry", letter_id, type(error).__name__)
             return JSONResponse({"retry": True}, status_code=503)
         return {"status": status}
+
+    @app.post("/internal/notify/{member_id}")
+    def notify_member(member_id: str, authorization: str | None = Header(default=None)):
+        try:
+            verify_tasks_request(
+                authorization,
+                config.tasks_audience,
+                config.tasks_service_account,
+                config.verify_token,
+            )
+        except AuthError as error:
+            log.warning("internal call refused: %s", error)
+            raise HTTPException(403, "forbidden") from None
+        try:
+            sent = config.send_notices(member_id)
+        except Exception as error:  # Cloud Tasks retries on any non-2xx
+            log.warning("notice for %s: %s, will retry", member_id, type(error).__name__)
+            return JSONResponse({"retry": True}, status_code=503)
+        return {"letters": sent}
 
     return app
 

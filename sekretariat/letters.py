@@ -3,7 +3,8 @@
 Every action records an event (metric source) and keeps `last_action` on the
 letter with the fields as they were, so „Cofnij” (DR-8) restores exactly that.
 `taken` says the current owner clicked „Zajmę się tym”; forwarding clears it, so
-the new owner decides for themselves.
+the new owner decides for themselves. Forwarding also records `assigned`, from
+which the new owner gets an e-mail (notices.py, DR-12).
 A letter the user may not see raises NotFound, so its existence never leaks.
 """
 
@@ -17,6 +18,7 @@ from sekretariat import access
 from sekretariat.access import View
 from sekretariat.blobs import BlobMissing, Blobs
 from sekretariat.household import Member, Role
+from sekretariat.notices import FORWARD, assigned
 from sekretariat.owners import Cause, act
 from sekretariat.store import Store, now
 
@@ -65,6 +67,8 @@ class Letters:
     household: list[Member]
     # Immediate reminder when a corrected deadline is close (D3); must not raise.
     remind: Callable[[str], None] = lambda letter_id: None
+    # „Masz nowe pismo do ogarnięcia” for the member (DR-12); must not raise.
+    notify: Callable[[str], None] = lambda member_id: None
 
     # Reading
 
@@ -179,8 +183,14 @@ class Letters:
         if letter.get("private") and not confirmed:
             raise NeedsConfirmation(target)
         event = act(self.household, letter["owner"], Cause.FORWARD, user.id, target)
-        changes = {"owner": event.owner, "taken": False}
+        changes = {
+            "owner": event.owner,
+            "taken": False,
+            "assigned": assigned(event.owner, user.id, now(), FORWARD),
+        }
         self._apply(letter_id, letter, user, Cause.FORWARD.value, changes)
+        if event.owner != user.id:
+            self.notify(event.owner)
 
     def confirm_deadline(self, letter_id: str, user: Member, deadline: date | None = None) -> None:
         letter = self._letter(letter_id, user, access.can_confirm_deadline)

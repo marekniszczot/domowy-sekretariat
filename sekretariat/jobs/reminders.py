@@ -20,7 +20,6 @@ Runs from the daily job (07:00 Europe/Warsaw) and right after a letter gets its
 verdict or its deadline is corrected (`letter_ids`).
 """
 
-import html
 import logging
 import smtplib
 from collections.abc import Iterable
@@ -29,10 +28,12 @@ from datetime import date, datetime
 from enum import StrEnum
 from zoneinfo import ZoneInfo
 
+from sekretariat import emails
+from sekretariat.emails import Item, deadline_words, plural
 from sekretariat.household import Member
 from sekretariat.mailer import Email, Mailer
 from sekretariat.store import Store
-from sekretariat.web.present import countdown, deadline_date, on_date, sender_label, until_date
+from sekretariat.web.present import countdown, deadline_date, sender_label
 
 log = logging.getLogger(__name__)
 
@@ -174,61 +175,32 @@ def remind(
 
 # E-mail (D7: metadata only)
 
-_INK = "#1D2A5C"
-_MUTED = "#5B6478"
-_RULE = "#DDE0E6"
-_URGENT = "#B3261E"
-_GROUND = "#F4F5F7"
-_FONT = "-apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
-
 
 def compose(reminders: list[Reminder], day: date, base_url: str) -> Email:
     ordered = sorted(reminders, key=lambda r: (r.due, r.letter_id))
     first = ordered[0]
     subject = f"{_headline(first, day)}: {sender_label(first.sender_type)}"
     if len(ordered) > 1:
-        subject += f" i {_others(len(ordered) - 1)}"
-
+        others = len(ordered) - 1
+        subject += f" i {others} {plural(others, 'inne pismo', 'inne pisma', 'innych pism')}"
     many = len(ordered) > 1
-    intro = "Przypomnienie o terminach pism." if many else "Przypomnienie o terminie pisma."
-    outro = (
-        "Pismo zamkniesz w aplikacji przyciskiem „Zrobione”, wtedy przypomnienia ustaną. "
-        "Treść pism jest tylko w aplikacji, po zalogowaniu."
-    )
-
-    text_items = []
-    html_items = []
-    for reminder in ordered:
-        sender = sender_label(reminder.sender_type)
-        when = _when(reminder, day)
-        link = f"{base_url}/pisma/{reminder.letter_id}"
-        note = "" if reminder.confirmed else "Termin niezatwierdzony, sprawdź go w aplikacji."
-        text_items.append("\n".join(filter(None, [f"▲ {sender}: {when}", note, link])))
-        html_items.append(
-            f'<div style="border-top:1px solid {_RULE};padding:16px 0;">'
-            f'<p style="margin:0;font-weight:700;">{html.escape(sender)}</p>'
-            f'<p style="margin:4px 0 0;color:{_URGENT};font-weight:700;">▲ {html.escape(when)}</p>'
-            + (f'<p style="margin:4px 0 0;color:{_MUTED};">{html.escape(note)}</p>' if note else "")
-            + f'<p style="margin:12px 0 0;"><a href="{html.escape(link)}" '
-            f'style="display:inline-block;background:{_INK};color:#FFFFFF;'
-            f'text-decoration:none;font-weight:700;padding:14px 20px;border-radius:6px;">'
-            "Otwórz pismo</a></p></div>"
+    items = [
+        Item(
+            title=sender_label(reminder.sender_type),
+            line=deadline_words(reminder.due, reminder.confirmed, day),
+            link=f"{base_url}/pisma/{reminder.letter_id}",
+            note="" if reminder.confirmed else "Termin niezatwierdzony, sprawdź go w aplikacji.",
+            urgent=True,
         )
-
-    text = "\n\n".join([intro, *text_items, outro, "Domowy Sekretariat"]) + "\n"
-    body = (
-        '<!doctype html><html lang="pl"><head><meta charset="utf-8"></head>'
-        f'<body style="margin:0;background:{_GROUND};">'
-        f'<div style="max-width:560px;margin:0 auto;padding:24px 16px;font-family:{_FONT};'
-        f'font-size:18px;line-height:1.5;color:{_INK};">'
-        f'<p style="margin:0 0 16px;">{html.escape(intro)}</p>'
-        + "".join(html_items)
-        + f'<p style="margin:16px 0 0;border-top:1px solid {_RULE};padding-top:16px;'
-        f'font-size:15px;color:{_MUTED};">{html.escape(outro)}</p>'
-        f'<p style="margin:8px 0 0;font-size:15px;color:{_MUTED};">Domowy Sekretariat</p>'
-        "</div></body></html>"
+        for reminder in ordered
+    ]
+    return emails.compose(
+        subject,
+        "Przypomnienie o terminach pism." if many else "Przypomnienie o terminie pisma.",
+        items,
+        "Pismo zamkniesz w aplikacji przyciskiem „Zrobione”, wtedy przypomnienia ustaną. "
+        + emails.CONTENT_IN_APP,
     )
-    return Email(subject, text, body)
 
 
 def _headline(reminder: Reminder, day: date) -> str:
@@ -236,20 +208,3 @@ def _headline(reminder: Reminder, day: date) -> str:
         return "Po terminie"
     words = countdown(reminder.due, day)
     return f"{words[:1].upper()}{words[1:]} termin"
-
-
-def _when(reminder: Reminder, day: date) -> str:
-    if reminder.step == Step.OVERDUE:
-        return f"termin minął {on_date(reminder.due, day)}"
-    until = until_date(reminder.due, day)
-    if not reminder.confirmed:
-        until = f"najpóźniej {until}"
-    return f"{countdown(reminder.due, day)} · {until}"
-
-
-def _others(count: int) -> str:
-    if count == 1:
-        return "1 inne pismo"
-    if count % 10 in (2, 3, 4) and count % 100 not in (12, 13, 14):
-        return f"{count} inne pisma"
-    return f"{count} innych pism"

@@ -3,9 +3,10 @@ from datetime import date, timedelta
 import pytest
 
 from sekretariat.config import ConfigError
+from sekretariat.emails import plural
 from sekretariat.household import Member, Role
 from sekretariat.jobs.__main__ import main
-from sekretariat.jobs.reminders import Step, _others, due_step, remind
+from sekretariat.jobs.reminders import Step, due_step, remind
 from sekretariat.mailer import MemoryMailer
 from sekretariat.store import MemoryStore
 
@@ -270,7 +271,7 @@ def test_unconfirmed_deadline_says_so(house):
     ],
 )
 def test_other_letters_plural(count, words):
-    assert _others(count) == words
+    assert f"{count} {plural(count, 'inne pismo', 'inne pisma', 'innych pism')}" == words
 
 
 # Job entrypoint

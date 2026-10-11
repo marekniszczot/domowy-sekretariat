@@ -199,6 +199,25 @@ def test_confirming_a_deadline_checks_reminders(service):
     assert reminded == [letter_id]
 
 
+def test_forwarding_assigns_and_notifies_the_new_owner(service):
+    notified = []
+    service.notify = notified.append
+    letter_id = processed(service, private=False, owner="koord")
+    service.forward(letter_id, KOORD, "dom2")
+    assigned = service.store.get_letter(letter_id)["assigned"]
+    assert (assigned["to"], assigned["by"], assigned["cause"]) == ("dom2", "koord", "FORWARD")
+    assert notified == ["dom2"]
+
+
+def test_forwarding_to_oneself_and_taking_notify_nobody(service):
+    notified = []
+    service.notify = notified.append
+    letter_id = processed(service, private=False, owner="koord")
+    service.forward(letter_id, KOORD, "koord")
+    service.handle(letter_id, KOORD)
+    assert notified == []
+
+
 def test_done_reopen_reveal(service):
     letter_id = processed(service)
     service.done(letter_id, DOM1)
