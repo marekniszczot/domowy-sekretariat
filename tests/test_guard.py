@@ -176,6 +176,11 @@ def test_ordinary_letters_are_not_injection(text):
         ("OSTATECZNE WEZWANIE DO ZAPŁATY", "wezwani do zapłat"),
         ("ostateczne wezwanie\ndo zapłaty", "wezwani do zapłat"),
         ("ko-\nmornik", "komorni"),
+        ("Niniejszym wypowiadamy umowę kompleksową", "wypowiad"),
+        ("Wzywamy do zapłaty kwoty 412 zł", "wzyw do zapłat"),
+        ("wzywa Pana do zapłaty", "wzyw pan do zapłat"),
+        ("wzywamy Panią do zapłaty", "wzyw pan do zapłat"),
+        ("wzywamy Państwa do zapłaty", "wzyw państw do zapłat"),
     ],
 )
 def test_escalation_matches_inflected_forms(text, entry):
@@ -192,6 +197,28 @@ def test_escalation_ignores_other_words(text):
     result = run(analysis(), text=text + " Nie musi Pan nic robić")
     assert result.escalation_hits == ()
     assert result.verdict == Verdict.NONE
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Od tej decyzji przysługuje odwołanie do Sądu Okręgowego w Warszawie.",
+        "Odwołanie wnosi się do sądu za pośrednictwem oddziału ZUS.",
+        "Na decyzję służy skarga do Wojewódzkiego Sądu Administracyjnego.",
+        "na podstawie aktu notarialnego, postanowienia\nsądu o nabyciu spadku",
+    ],
+)
+def test_boilerplate_court_wording_does_not_escalate(text):
+    result = run(analysis(), text=text + " Nie musi Pan nic robić")
+    assert result.escalation_hits == ()
+
+
+def test_real_court_letter_escalates_despite_boilerplate():
+    text = (
+        "Sąd Rejonowy wzywa Pana na rozprawę. "
+        "Na postanowienie przysługuje zażalenie, odwołanie do sądu okręgowego."
+    )
+    assert run(analysis(), text=text).escalation_hits == ("sąd",)
 
 
 def test_custom_escalation_list():

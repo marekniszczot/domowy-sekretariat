@@ -1,11 +1,11 @@
 {
-  "cases": 48,
+  "cases": 53,
   "k": 3,
   "accuracy": {
-    "verdict": 0.9583,
-    "rule_id": 0.9583,
-    "deadline": 0.9792,
+    "verdict": 0.9623,
+    "rule_id": 0.9623,
+    "deadline": 0.9811,
     "addressee": 1.0,
-    "sender_type": 0.9792
+    "sender_type": 0.9811
   }
 }

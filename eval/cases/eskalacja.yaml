@@ -1,0 +1,101 @@
+# SYNTHETIC letters, written for the evaluation set. No real people or companies.
+# Escalation list (T16): standard wording that must not escalate, and inflected
+# forms that must.
+- id: podatek-formulka-spadek
+  delivery_date: 2026-02-04
+  tags: [boilerplate]
+  expected: {verdict: SELF, rule_id: R3, deadline: 2026-03-15, addressee: jan, sender_type: URZAD}
+  text: |
+    PREZYDENT MIASTA PRZYKŁADOWO
+    Wydział Podatków i Opłat
+    Przykładowo, dnia 21-01-2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    DECYZJA nr PN.3120.5120.2026
+    w sprawie wymiaru podatku od nieruchomości na 2026 rok
+
+    Ustala się wysokość podatku od nieruchomości na 2026 rok w kwocie 96,00 zł,
+    płatnego w ratach po 24,00 zł do: 15-03-2026, 15-05-2026, 15-09-2026, 15-11-2026.
+
+    W przypadku, gdy podatnik nie złoży w terminie informacji o nieruchomościach,
+    organ podatkowy ustala wysokość podatku na podstawie aktu notarialnego, aktu
+    poświadczenia dziedziczenia, postanowienia sądu o nabyciu spadku lub danych
+    z ewidencji gruntów i budynków.
+
+    Od decyzji służy odwołanie do Samorządowego Kolegium Odwoławczego w terminie
+    14 dni od dnia jej doręczenia.
+
+- id: zus-dodatek-odwolanie-do-sadu
+  delivery_date: 2026-10-14
+  tags: [boilerplate]
+  expected: {verdict: FORWARD, rule_id: R11, deadline: null, addressee: zofia, sender_type: ZUS}
+  text: |
+    ZAKŁAD UBEZPIECZEŃ SPOŁECZNYCH
+    Oddział w Warszawie
+    Warszawa, 8 października 2026 r.
+
+    Pani Zofia Wzorcowa
+    ul. Klonowa 15, 00-002 Warszawa
+
+    DECYZJA w sprawie dodatku pielęgnacyjnego
+
+    Przyznaje się dodatek pielęgnacyjny od 1 września 2026 r. w kwocie 348,22 zł
+    miesięcznie. Dodatek będzie wypłacany razem z emeryturą.
+
+    Odwołanie wnosi się do sądu za pośrednictwem oddziału ZUS, który wydał decyzję,
+    w terminie miesiąca od dnia doręczenia decyzji.
+
+- id: sko-skarga-do-wsa
+  delivery_date: 2026-09-21
+  tags: [boilerplate]
+  expected: {verdict: SELF, rule_id: R3, deadline: 2026-11-15, addressee: jan, sender_type: URZAD}
+  text: |
+    SAMORZĄDOWE KOLEGIUM ODWOŁAWCZE W PRZYKŁADOWIE
+    Przykładowo, 15 września 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7 m. 3, 81-001 Przykładowo
+
+    DECYZJA
+
+    Po rozpatrzeniu odwołania od decyzji Prezydenta Miasta Przykładowo w sprawie
+    podatku od nieruchomości na 2026 rok Kolegium zmienia zaskarżoną decyzję
+    i ustala podatek w kwocie 58,00 zł. Pozostała do zapłaty rata 14,50 zł
+    jest płatna do 15 listopada 2026 r.
+
+    Na niniejszą decyzję służy skarga do Wojewódzkiego Sądu Administracyjnego
+    w terminie 30 dni od dnia jej doręczenia.
+
+- id: internet-wzywamy-do-zaplaty
+  delivery_date: 2026-10-19
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: R2, deadline: 2026-10-30, addressee: jan, sender_type: TELEKOMUNIKACJA}
+  text: |
+    Netlinia Przykład sp. z o.o.
+    Dział Należności
+    Warszawa, 14 października 2026 r.
+
+    Pan Jan Przykładowy
+    ul. Lipowa 7/3, 00-001 Warszawa
+
+    Wzywamy Pana do zapłaty zaległej kwoty 209,97 zł za faktury z lipca, sierpnia
+    i września 2026 r. do dnia 30.10.2026 r. Po tym terminie sprawa zostanie
+    przekazana do firmy windykacyjnej.
+
+- id: prad-wypowiadamy-umowe
+  delivery_date: 2026-10-22
+  tags: [escalation]
+  expected: {verdict: FORWARD, rule_id: R2, deadline: 2026-11-30, addressee: ewa, sender_type: ENERGIA}
+  text: |
+    Energa Wzorcowa Obrót sp. z o.o.
+    Gdańsk, 19.10.2026
+
+    Pani Ewa Przykładowa
+    ul. Lipowa 7 m. 3, 00-001 Warszawa
+
+    Z powodu zaległości w opłatach przekraczającej dwa okresy rozliczeniowe
+    niniejszym wypowiadamy umowę sprzedaży energii elektrycznej nr SE/2020/44120.
+    Umowa ulegnie rozwiązaniu z dniem 30.11.2026 r., jeśli do tego dnia nie
+    zostanie uregulowana kwota 388,40 zł.
