@@ -70,8 +70,10 @@ _UNTIL = ["poniedziałku", "wtorku", "środy", "czwartku", "piątku", "soboty", 
 _ON = ["w poniedziałek", "we wtorek", "w środę", "w czwartek", "w piątek", "w sobotę",
        "w niedzielę"]  # fmt: skip
 
-_OSOBA = re.compile(r"\bOSOBA_(\d+)\b")
-_INNA = re.compile(r"\bINNA(?:_\d+)?\b")
+# The model sometimes inflects placeholders („dla OSOBY_1”, „OSOBIE_2”); the
+# name stays in the nominative then, which still reads better than a code.
+_OSOBA = re.compile(r"\bOSOB[A-ZĄĘ]*_(\d+)\b")
+_INNA = re.compile(r"\bINNA(?:_\d+)?\b|\bINN[A-ZĄĘ]+_\d+\b")
 
 
 # State
@@ -154,6 +156,8 @@ def stamp_label(letter: dict, today: date, verb_text: str) -> str:
 
 
 def confidence_word(letter: dict) -> str:
+    if unsure_reason(letter):
+        return "Sprawdź"  # the guard overrode the model, whatever it claimed
     confidence = (letter.get("analysis") or {}).get("confidence")
     return "Pewne" if confidence is not None and confidence >= CERTAIN else "Sprawdź"
 

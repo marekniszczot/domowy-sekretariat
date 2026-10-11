@@ -118,7 +118,8 @@ Zasady:
   FORWARD (przekazać dalej). Wybierz według reguły z <regulamin>.
 - rule_id to ID reguły, która zadecydowała. Przy NONE i SELF musi wskazywać regułę.
   Jeśli żadna reguła nie pasuje, daj FORWARD i rule_id null.
-- Każde pole *_quote to fragment skopiowany z <pismo> znak w znak, bez parafrazy.
+- Każde pole *_quote to jeden ciągły fragment skopiowany z <pismo> znak w znak, bez
+  parafrazy. Nie skracaj go i nie łącz kilku fragmentów („[...]”, „…”).
   rule_trigger_quote jest wymagany zawsze, także przy NONE.
 - Termin: ABSOLUTE, gdy pismo podaje datę; RELATIVE, gdy podaje liczbę dni, tygodni
   albo miesięcy (nie przeliczaj ich na datę ani na inną jednostkę; „dni robocze” to DAYS);
@@ -130,7 +131,8 @@ Zasady:
   przychodnia, szpital, gabinet lekarski albo laboratorium.
 - letter_date to data wystawienia pisma, jeśli pismo ją podaje.
 - confidence to Twoja pewność co do werdyktu, od 0 do 1.
-- summary_plain_pl i required_action pisz prostym polskim, bez żargonu.
+- summary_plain_pl i required_action pisz prostym polskim, bez żargonu. Znaczniki
+  zostawiaj bez odmiany, dokładnie jak w piśmie: „dla OSOBA_1”, nie „dla OSOBY_1”.
 """
 
 

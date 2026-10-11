@@ -163,6 +163,13 @@ def test_names_replace_placeholders():
     )
 
 
+def test_inflected_placeholders_become_names_too():
+    text = "Podatek dla OSOBY_1 i OSOBY_2. Przekazać pismo OSOBIE_2, z INNĄ_1, OSOBA_DOMU."
+    assert present.with_names(text, HOUSE) == (
+        "Podatek dla Ewa i Tata. Przekazać pismo Tata, z inna osoba, Wasz dom."
+    )
+
+
 def test_quote_context_marks_the_span():
     raw = "Szanowni Państwo, prosimy o zapłatę do dnia 15.10.2026 r. pod rygorem odsetek."
     start = raw.index("do dnia")
@@ -192,6 +199,12 @@ def test_every_sender_type_has_a_label():
 )
 def test_confidence_in_words(confidence, expected):
     assert present.confidence_word({"analysis": {"confidence": confidence}}) == expected
+
+
+def test_guard_doubt_overrides_the_model_confidence():
+    letter = {"analysis": {"confidence": 1}, "reasons": ["QUOTE_NOT_FOUND", "ESCALATION"]}
+    assert present.confidence_word(letter) == "Sprawdź"
+    assert present.confidence_word(letter | {"reasons": ["ESCALATION"]}) == "Pewne"
 
 
 # Lists (DR-3)
