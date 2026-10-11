@@ -62,7 +62,7 @@
 
 - id: zus-waloryzacja-zofia
   delivery_date: 2026-03-04
-  tags: [escalation]
+  tags: [boilerplate]
   expected: {verdict: FORWARD, rule_id: R11, deadline: null, addressee: zofia, sender_type: ZUS}
   text: |
     ZAKŁAD UBEZPIECZEŃ SPOŁECZNYCH

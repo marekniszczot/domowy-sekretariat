@@ -23,8 +23,14 @@ Injection signs: words a letter has no reason to use, because they are ours: the
 answer's field names, the prompt's tags, rule ids („reguła R4”), and requests to
 ignore instructions. The model is told the same, the guard does not rely on it.
 
-Escalation entries are word prefixes: "urz skarbow" matches "Urzędu Skarbowego",
-"komorni" matches "komornika" and "komorniczej".
+Escalation entries are word prefixes on the normalized masked text, so case and
+most Polish inflection are covered: "urz skarbow" matches "Urzędu Skarbowego",
+"komorni" matches "komornika" and "komorniczej". Where the stem itself changes,
+the list has both ("wypowiedz", "wypowiad"; "wezwani do zapłat", "wzyw do zapłat");
+words in an entry are consecutive, so "wzywa Pana do zapłaty" needs its own entry.
+A hit inside standard wording that every decision carries does not count (EXEMPT,
+same syntax): "odwołanie do Sądu Okręgowego" in a ZUS decision is not a letter
+from a court. Another hit of the same entry elsewhere in the letter still counts.
 """
 
 import re
@@ -39,8 +45,20 @@ DEFAULT_ESCALATION = (
     "sąd",
     "egzekuc",
     "wypowiedz",
+    "wypowiad",
     "urz skarbow",
     "wezwani do zapłat",
+    "wzyw do zapłat",
+    "wzyw pan do zapłat",
+    "wzyw państw do zapłat",
+)
+# Boilerplate of decisions and instructions; built in, not editable in „Dom”.
+EXEMPT = (
+    "odwoł do sąd",
+    "odwoł wnos się do sąd",
+    "skarg do sąd administracyjn",
+    "skarg do wojewódzk sąd administracyjn",
+    "postanowieni sąd o nabyci spadk",
 )
 QUOTE_FIELDS = ("rule_trigger_quote", "deadline_quote", "consequence_quote", "letter_date_quote")
 
@@ -175,9 +193,20 @@ def injection_signs(masked_text: str) -> bool:
     return _INJECTION.search(normalized) is not None
 
 
-def escalation_hits(masked_text: str, escalation: tuple[str, ...]) -> tuple[str, ...]:
+def escalation_hits(
+    masked_text: str, escalation: tuple[str, ...], exempt: tuple[str, ...] = EXEMPT
+) -> tuple[str, ...]:
     normalized, _ = normalize(masked_text)
-    return tuple(entry for entry in escalation if _escalation_pattern(entry).search(normalized))
+    covered = [m.span() for e in exempt for m in _escalation_pattern(e).finditer(normalized)]
+
+    def counts(match: re.Match) -> bool:
+        return not any(start <= match.start() < end for start, end in covered)
+
+    return tuple(
+        entry
+        for entry in escalation
+        if any(counts(m) for m in _escalation_pattern(entry).finditer(normalized))
+    )
 
 
 def _escalation_pattern(entry: str) -> re.Pattern[str]:
