@@ -8,6 +8,7 @@ from sekretariat.access import (
     can_reveal,
     forward_suggestion,
     forward_targets,
+    rule_member,
     view_level,
 )
 from sekretariat.household import Member, Role
@@ -149,3 +150,11 @@ def test_suggestion_falls_back_to_the_coordinator():
 def test_no_suggestion_of_oneself():
     rules = [Rule("R1", "Rachunki: OSOBA_2.")]
     assert forward_suggestion(letter(analysis={"rule_id": "R1"}), HOUSE, rules, KOORD) is None
+
+
+def test_rule_member_is_whoever_the_deciding_rule_names():
+    rules = [Rule("R1", "Podatki: OSOBA_2."), Rule("R2", "Reklamy wyrzucamy.")]
+    assert rule_member(letter(analysis={"rule_id": "R1"}), HOUSE, rules) == KOORD
+    assert rule_member(letter(analysis={"rule_id": "R2"}), HOUSE, rules) is None
+    assert rule_member(letter(analysis={"rule_id": "R9"}), HOUSE, rules) is None
+    assert rule_member(letter(analysis=None), HOUSE, rules) is None

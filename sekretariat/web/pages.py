@@ -357,8 +357,11 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
     if rule_id := analysis.get("rule_id"):
         rule = next((r for r in config.letters.store.rules() if r.id == rule_id), None)
     owner = next((m for m in household if m.id == letter.get("owner")), None)
+    named = access.rule_member(letter, household, config.letters.store.rules())
     if letter.get("verdict") == "NONE":
         why = "Dlaczego nic nie trzeba robić"
+    elif named and named != owner:
+        why = f"Według regulaminu zajmuje się tym: {named.name}"
     else:
         why = f"Dlaczego {owner.name}" if owner else "Dlaczego tak"
 
@@ -511,8 +514,18 @@ def actions(letter: dict, user: Member, config, day: date) -> dict:
         primary = "take"
 
     sheet = None
+    hint = None
     if can_act:
         rules = config.letters.store.rules()
+        # The rule only suggests (it is the model's match); one tap to agree.
+        named = access.rule_member(letter, household, rules)
+        if (
+            named
+            and named.id != letter.get("owner")
+            and not letter.get("taken")
+            and named in access.forward_targets(household, user)
+        ):
+            hint = named
         suggestion = access.forward_suggestion(letter, household, rules, user)
         rule_id = (letter.get("analysis") or {}).get("rule_id")
         rule = next((r for r in rules if r.id == rule_id), None)
@@ -546,6 +559,7 @@ def actions(letter: dict, user: Member, config, day: date) -> dict:
     return {
         "primary": primary,
         "sheet": sheet,
+        "hint": hint,
         "reopen": not is_open and can_close,
         "reveal": access.can_reveal(letter, user) and is_open,
         "coordinator": coordinator.name if coordinator else "",

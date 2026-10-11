@@ -41,6 +41,14 @@
 <h2 class="section-h">{{ why }}</h2>
 <p class="rule-line">„{{ rule }}”</p>
 <p class="rule-src">Domowy regulamin</p>
+{% if hint %}
+<form method="post" action="/pisma/{{ id }}/przekaz{{ act_suffix }}" class="rule-forward">
+  {% if sheet.private %}<p class="muted">{{ hint.name }} zobaczy całą treść tego pisma.</p>{% endif %}
+  <input type="hidden" name="target" value="{{ hint.id }}">
+  <input type="hidden" name="confirmed" value="true">
+  <button class="btn" type="submit">Przekaż: {{ hint.name }}</button>
+</form>
+{% endif %}
 {% endif %}
 
 {% if quotes %}

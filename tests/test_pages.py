@@ -290,6 +290,45 @@ def test_card_offers_take_and_forward_with_a_suggestion_from_the_rules(app, stor
     assert "popover" not in title and page.index("</head>") < page.index('id="forward-sheet"')
 
 
+def test_rule_naming_someone_else_offers_one_tap_forward(app, store):
+    # Addressed to Ula, but the deciding rule says Ala handles it: Ula still owns it.
+    letter_id = verdict_letter(store, owner="dom2", addressee="dom2", uploaded_by="dom2")
+    http = as_member(app, DOM2)
+    page = http.get(f"/pisma/{letter_id}").text
+    assert "Według regulaminu zajmuje się tym: Ala" in page and "Dlaczego Ula" not in page
+    assert ">Przekaż: Ala</button>" in page and "Zajmę się tym" in page
+    assert "zobaczy całą treść" not in page.split('id="forward-sheet"')[0]
+
+    response = http.post(
+        f"/pisma/{letter_id}/przekaz", data={"target": "dom1", "confirmed": "true"}
+    )
+    assert response.status_code == 303
+    assert store.get_letter(letter_id)["owner"] == "dom1"
+
+
+def test_rule_hint_warns_about_a_private_letter(app, store):
+    letter_id = verdict_letter(
+        store, owner="dom2", addressee="dom2", uploaded_by="dom2", private=True
+    )
+    page = as_member(app, DOM2).get(f"/pisma/{letter_id}").text
+    form = page[page.index('class="rule-forward"') : page.index(">Przekaż: Ala</button>")]
+    assert "Ala zobaczy całą treść tego pisma." in form
+
+
+@pytest.mark.parametrize(
+    "fields, viewer",
+    [
+        ({"owner": "dom2", "taken": True}, DOM2),  # Ula already said „Zajmę się tym”
+        ({"owner": "dom2", "private": False}, DOM1),  # Ala is the one the rule names
+        ({}, DOM1),  # Ala owns it already
+    ],
+)
+def test_no_rule_forward_button(app, store, fields, viewer):
+    letter_id = verdict_letter(store, **fields)
+    page = as_member(app, viewer).get(f"/pisma/{letter_id}").text
+    assert "Przekaż: Ala" not in page
+
+
 def test_take_then_done_then_undo(app, store):
     letter_id = verdict_letter(store)
     http = as_member(app, DOM1)

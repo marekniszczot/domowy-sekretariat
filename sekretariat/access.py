@@ -98,6 +98,19 @@ def forward_targets(household: list[Member], user: Member) -> list[Member]:
     return [m for m in household if m.has_account and m.id != user.id]
 
 
+def rule_member(letter: dict, household: list[Member], rules: list[Rule]) -> Member | None:
+    """The member the deciding rule names („Zajmuje się tym OSOBA_2”), if any."""
+    rule_id = (letter.get("analysis") or {}).get("rule_id")
+    rule = next((r for r in rules if r.id == rule_id), None)
+    if rule is None:
+        return None
+    for match in _OSOBA_IN_RULE.finditer(rule.text):
+        index = int(match.group(1)) - 1
+        if 0 <= index < len(household):
+            return household[index]
+    return None
+
+
 def forward_suggestion(
     letter: dict, household: list[Member], rules: list[Rule], user: Member
 ) -> Member | None:

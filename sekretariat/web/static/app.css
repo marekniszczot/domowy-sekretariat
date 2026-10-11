@@ -142,6 +142,8 @@ a { color: inherit; }
 .p { margin: 0; }
 .rule-line { font-family: var(--display); font-weight: 600; font-size: 1.3rem; line-height: 1.3; margin: 4px 0 2px; font-variation-settings: "opsz" 48; }
 .rule-src { color: var(--muted); font-size: .9rem; margin: 0; }
+.rule-forward { margin-top: 16px; }
+.rule-forward .muted { margin: 0 0 8px; }
 .quote { margin: 12px 0 0; padding: 12px 14px; background: var(--veil); border-radius: var(--r-sm); }
 .quote mark { background: var(--highlight); color: inherit; padding: 0 2px; }
 .in-letter { margin-top: 24px; }

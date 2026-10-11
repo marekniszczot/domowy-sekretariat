@@ -116,5 +116,7 @@ def build(environ: dict[str, str] | None = None) -> FastAPI:
 def __getattr__(name: str):
     # `uvicorn sekretariat.api.main:app` builds the app on first access, not on import.
     if name == "app":
+        # uvicorn sets up only its own loggers; without this, app INFO lines are lost.
+        logging.basicConfig(level=logging.INFO)
         return build()
     raise AttributeError(name)
