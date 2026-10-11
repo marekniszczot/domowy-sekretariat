@@ -30,8 +30,13 @@ resource "google_iam_workload_identity_pool_provider" "github" {
   }
 }
 
+# GitHub sends the immutable subject: repo:<owner>@<owner id>/<name>@<repo id>:environment:<env>
+# (a deleted and recreated repository or owner with the same name gets other ids).
 locals {
-  wif_subject_prefix = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/subject/repo:${var.github_repository}:environment"
+  github_owner_name  = split("/", var.github_repository)[0]
+  github_repo_name   = split("/", var.github_repository)[1]
+  github_subject     = "${local.github_owner_name}@${var.github_owner_id}/${local.github_repo_name}@${var.github_repository_id}"
+  wif_subject_prefix = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/subject/repo:${local.github_subject}:environment"
 }
 
 resource "google_service_account" "deploy" {

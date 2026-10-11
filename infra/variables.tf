@@ -35,6 +35,11 @@ variable "github_owner_id" {
   type        = string
 }
 
+variable "github_repository_id" {
+  description = "Numeric GitHub id of the repository; part of the OIDC subject (immutable subject format)."
+  type        = string
+}
+
 variable "placeholder_image" {
   description = "Image used until the first real deploy. Terraform ignores later image changes."
   type        = string
