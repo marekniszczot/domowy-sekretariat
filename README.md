@@ -17,12 +17,10 @@ Domownicy spisują regulamin zwykłym językiem, np. „Zaległości i wezwania 
 
 ```mermaid
 flowchart LR
-    A[Zdjęcie pisma] --> B[Document AI<br>odczyt tekstu]
-    B --> C[Maskowanie<br>DLP + kod]
-    C --> D[Gemini 2.5 Flash<br>+ regulamin]
-    D --> E[Strażnik<br>w kodzie]
-    E --> F[Terminy<br>i właściciel]
-    F --> G[Karta i przypomnienia]
+    A[Zdjęcie pisma<br>Document AI] --> B[Maskowanie<br>DLP + kod]
+    B --> C[Gemini 2.5 Flash<br>+ regulamin]
+    C --> D[Strażnik i terminy<br>w kodzie]
+    D --> E[Karta<br>i przypomnienia]
 ```
 
 **Model proponuje, kod decyduje.** Gemini dostaje zamaskowane pismo i regulamin, a odpowiada w stałym formacie JSON: werdykt, numer reguły, cytaty, termin i pewność. Strażnik ([`sekretariat/guard.py`](sekretariat/guard.py)) kieruje pismo do człowieka, gdy:
