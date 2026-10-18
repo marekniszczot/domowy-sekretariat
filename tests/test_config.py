@@ -56,6 +56,17 @@ def test_address_forms_are_optional_per_member():
     assert [m.address_forms for m in members] == [(), ("Lipowa 7", "00-001"), ()]
 
 
+def test_name_cases_are_optional_and_give_the_display_name_in_a_case():
+    members = parse_household(
+        VALID.replace(
+            "id: jan\n", "id: jan\n    name_cases: {dopelniacz: Jana, celownik: Janowi}\n"
+        )
+    )
+    assert members[1].name_in("celownik") == "Janowi"
+    assert members[1].name_in("biernik") == "Jan"  # missing: nominative
+    assert members[0].name_cases == ()
+
+
 def test_display_name_defaults_to_the_first_first_name_form():
     members = parse_household(
         VALID.replace("id: zofia\n", "id: zofia\n    display_name: Babcia Zosia\n")
@@ -78,6 +89,7 @@ def test_display_name_defaults_to_the_first_first_name_form():
         (VALID.replace("id: zofia", "id: Zofia K"), "id"),
         (VALID.replace("jan2@example.com", "jan-at-example"), "emails"),
         (VALID + "extra: 1\n", "extra"),
+        (VALID.replace("id: jan\n", "id: jan\n    name_cases: {genitive: Jana}\n"), "name_cases"),
         ("members: [", "not valid YAML"),
     ],
 )

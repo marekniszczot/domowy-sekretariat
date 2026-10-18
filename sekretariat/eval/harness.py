@@ -9,10 +9,10 @@
                3 pp below eval/baseline.json (changed only by an explicit commit)
 
 Addressee and sender type are reported, not gated, and so is the card text (DT13):
-a member placeholder outside the nominative ("dla OSOBA_1", "OSOBY_1") shows up as
-a name in the wrong case, and a stamp action over 6 words or naming a person is too
-long. OCR is not part of it: cases are text, so the set measures masking, the
-prompt, the model and the guard.
+a placeholder after a word that may need another case than the card can tell
+(inflect.py: "wyniki badań OSOBA_3") may show a name in the wrong case, and a stamp
+action over 6 words or naming a person is too long. OCR is not part of it: cases
+are text, so the set measures masking, the prompt, the model and the guard.
 """
 
 import json
@@ -27,6 +27,7 @@ from sekretariat.deadlines import compute_deadline
 from sekretariat.eval.cases import ROOT, Case
 from sekretariat.guard import DEFAULT_ESCALATION, guard
 from sekretariat.household import Member
+from sekretariat.inflect import unsure_case
 from sekretariat.llm import LetterAnalysis, LlmFailure
 from sekretariat.mask import Finding, address_spans, mask
 from sekretariat.rules import Rule
@@ -36,12 +37,7 @@ GATED = ("verdict", "rule_id", "deadline")
 REPORTED = ("addressee", "sender_type")
 TOLERANCE = 0.03
 MAX_ACTION_WORDS = 6
-# The card puts the nominative name in place of a placeholder, so a placeholder reads
-# right only as a subject: at a sentence start or after a conjunction. Anything else
-# ("dla OSOBA_1", "wyniki badań OSOBA_3") or an inflected one ("OSOBY_1") does not.
-_INFLECTED = re.compile(r"\bOSOB(?!A_)[A-ZĄĘ]*_\d+")
-_PRECEDED = re.compile(r"(\S+)\s+OSOBA_\d+")
-_SUBJECT_AFTER = {"i", "oraz", "a", "ale", "że", "bo", "gdy", "lub", "albo", "więc", "ponieważ"}
+_PLACEHOLDER = re.compile(r"\bOSOBA_\d+")
 
 Analyze = Callable[[str, list[Rule]], LetterAnalysis | LlmFailure]
 Inspect = Callable[[str], list[Finding]]
@@ -98,13 +94,7 @@ def run_once(
 
 
 def _oblique(text: str) -> bool:
-    if _INFLECTED.search(text):
-        return True
-    for match in _PRECEDED.finditer(text):
-        word = match.group(1)
-        if not word.endswith((".", "!", "?", ":")) and word.lower() not in _SUBJECT_AFTER:
-            return True
-    return False
+    return any(unsure_case(text, match.start()) for match in _PLACEHOLDER.finditer(text))
 
 
 def _long_action(action: str) -> bool:

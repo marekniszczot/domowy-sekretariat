@@ -174,9 +174,30 @@ def test_names_replace_placeholders():
 
 
 def test_inflected_placeholders_become_names_too():
+    # No case forms in the config: the name stays in the nominative.
     text = "Podatek dla OSOBY_1 i OSOBY_2. Przekazać pismo OSOBIE_2, z INNĄ_1, OSOBA_DOMU."
     assert present.with_names(text, HOUSE) == (
         "Podatek dla Ewa i Tata. Przekazać pismo Tata, z inna osoba, Wasz dom."
+    )
+
+
+def test_placeholder_case_picks_the_name_form():
+    jan = Member("jan", Role.KOORDYNATOR, ("Jan",), name_cases=(
+        ("dopelniacz", "Jana"), ("celownik", "Janowi"), ("biernik", "Jana"),
+        ("narzednik", "Janem"), ("miejscownik", "Janie"),
+    ))  # fmt: skip
+    text = (
+        "OSOBA_1 płaci. Bank informuje OSOBA_1 o zmianie dla OSOBA_1. Ulga przysługuje "
+        "OSOBA_1, umowa z OSOBA_1, rozmowa o OSOBA_1. Pismo otrzymał OSOBA_1."
+    )
+    assert present.with_names(text, [jan]) == (
+        "Jan płaci. Bank informuje Jana o zmianie dla Jana. Ulga przysługuje Janowi, "
+        "umowa z Janem, rozmowa o Janie. Pismo otrzymał Jan."
+    )
+    # The model may inflect a placeholder anyway; the ending tells the case.
+    inflected = "Dla OSOBY_1, OSOBIE_1 przysługuje, o OSOBIE_1. Witaj, OSOBO_1."
+    assert present.with_names(inflected, [jan]) == (
+        "Dla Jana, Janowi przysługuje, o Janie. Witaj, Jan."  # no vocative given
     )
 
 

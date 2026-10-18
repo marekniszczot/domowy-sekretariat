@@ -18,6 +18,7 @@ from datetime import date
 from enum import StrEnum
 
 from sekretariat.household import Member
+from sekretariat.inflect import placeholder_case
 
 PROCESSING = {"received", "ocr_done", "masked"}
 URGENT_DAYS = 3
@@ -73,7 +74,7 @@ _ON = ["w poniedziałek", "we wtorek", "w środę", "w czwartek", "w piątek", "
 
 # The model sometimes inflects placeholders („dla OSOBY_1”, „OSOBIE_2”); the
 # name stays in the nominative then, which still reads better than a code.
-_OSOBA = re.compile(r"\bOSOB[A-ZĄĘ]*_(\d+)\b")
+_OSOBA = re.compile(r"\bOSOB([A-ZĄĘ]*)_(\d+)\b")
 _INNA = re.compile(r"\bINNA(?:_\d+)?\b|\bINN[A-ZĄĘ]+_\d+\b")
 
 
@@ -222,11 +223,15 @@ def sender_label(sender_type: str | None) -> str:
 
 
 def with_names(text: str, household: list[Member]) -> str:
-    """OSOBA_n → the member's name, for people who may already see the content."""
+    """OSOBA_n → the member's name in the placeholder's case, for people who may already
+    see the content. A case the household config does not give falls back to the name."""
 
     def member(match: re.Match) -> str:
-        index = int(match.group(1)) - 1
-        return household[index].name if 0 <= index < len(household) else match.group(0)
+        index = int(match.group(2)) - 1
+        if not 0 <= index < len(household):
+            return match.group(0)
+        case = placeholder_case(text, match.start(), match.group(1))
+        return household[index].name_in(case) if case else household[index].name
 
     text = text.replace("OSOBA_DOMU", "Wasz dom")
     return _INNA.sub("inna osoba", _OSOBA.sub(member, text))
