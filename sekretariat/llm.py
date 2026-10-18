@@ -59,7 +59,9 @@ class LetterAnalysis(BaseModel):
     )
     addressee: str = Field(description="OSOBA_n, OSOBA_DOMU, INNA_n, INNA albo NIEZNANY")
     summary_plain_pl: str = Field(description="Najwyżej 3 zdania prostym polskim")
-    required_action: str = Field(description="Co trzeba zrobić; pusty tekst, jeśli nic")
+    required_action: str = Field(
+        description="Co trzeba zrobić: bezokolicznik, najwyżej 6 słów, bez osób; pusty, jeśli nic"
+    )
     verdict: Verdict
     rule_id: str | None = Field(description="ID reguły, która zadecydowała, albo null")
     rule_trigger_quote: str = Field(description="Dosłowny fragment pisma, który uruchomił regułę")
@@ -143,8 +145,13 @@ Zasady:
   przychodnia, szpital, gabinet lekarski albo laboratorium.
 - letter_date to data wystawienia pisma, jeśli pismo ją podaje.
 - confidence to Twoja pewność co do werdyktu, od 0 do 1.
-- summary_plain_pl i required_action pisz prostym polskim, bez żargonu. Znaczniki
-  zostawiaj bez odmiany, dokładnie jak w piśmie: „dla OSOBA_1”, nie „dla OSOBY_1”.
+- summary_plain_pl i required_action pisz prostym polskim, bez żargonu.
+- required_action to krótka czynność: bezokolicznik, najwyżej 6 słów, bez znaczników
+  osób, bo kto ma to zrobić, ustala aplikacja: „Opłacić zaległą fakturę”, nie
+  „OSOBA_1 powinna opłacić fakturę” ani „Przekazać pismo do OSOBA_2”.
+- Znacznik osoby stawiaj tylko w mianowniku, jako podmiot zdania, i bez odmiany:
+  „OSOBA_1 ma zaległość 69,99 zł”, a nie „informuje OSOBA_1”, „dla OSOBA_1” ani
+  „dla OSOBY_1”. Aplikacja wstawi za znacznik imię w mianowniku.
 """
 
 

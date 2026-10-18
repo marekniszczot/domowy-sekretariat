@@ -358,6 +358,9 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         rule = next((r for r in config.letters.store.rules() if r.id == rule_id), None)
     owner = next((m for m in household if m.id == letter.get("owner")), None)
     named = access.rule_member(letter, household, config.letters.store.rules())
+    acts = actions(letter, user, config, day)
+    # The stamp says „Przekaż: X” exactly when the card offers that one tap (DT13).
+    verb = names(present.verb(letter, day, acts["hint"].name if acts["hint"] else None))
     if letter.get("verdict") == "NONE":
         why = "Dlaczego nic nie trzeba robić"
     elif named and named != owner:
@@ -372,9 +375,9 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         "state": current,
         "icon": present.ICON[current],
         "label": present.LABEL[current],
-        "verb": names(present.verb(letter, day)),
+        "verb": verb,
         "when": present.when_line(letter, day),
-        "stamp_label": present.stamp_label(letter, day, names(present.verb(letter, day))),
+        "stamp_label": present.stamp_label(letter, day, verb),
         "sender": present.sender_label(analysis.get("sender_type")),
         "delivered": present.delivered(date.fromisoformat(delivery), day) if delivery else "",
         "confidence": present.confidence_word(letter) if analysis else None,
@@ -388,7 +391,7 @@ def card(letter: dict, user: Member, config, day: date, first: bool) -> dict:
         "photo": f"/pisma/{letter['id']}/strona/1" if photo else None,
         "first": first,
         "id": letter["id"],
-        **actions(letter, user, config, day),
+        **acts,
     }
 
 

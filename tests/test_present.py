@@ -153,6 +153,16 @@ def test_verb(fields, expected):
     assert present.verb(fields, TODAY) == expected
 
 
+def test_verb_names_the_member_a_rule_suggests():
+    action = {"required_action": "Przekazać pismo do OSOBA_2 w celu zapłaty."}
+    assert present.verb(letter("FORWARD", analysis=action), TODAY, "Jan") == "Przekaż: Jan"
+    urgent = letter("FORWARD", ["ESCALATION"], analysis=action)
+    assert present.verb(urgent, TODAY, "Jan") == "Przekaż: Jan"
+    # The guard doubts the model, so its rule match is no reason to name anyone.
+    unsure = letter("FORWARD", ["INJECTION"], analysis=action)
+    assert present.verb(unsure, TODAY, "Jan") == "Przekaż dalej"
+
+
 # Placeholders become names only for display
 
 
