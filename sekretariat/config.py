@@ -33,6 +33,7 @@ class _MemberConfig(BaseModel, extra="forbid"):
     first_name_forms: list[str] = Field(min_length=1)
     surname_forms: list[str] = []
     display_name: str = ""
+    address_forms: list[str] = []
 
     @model_validator(mode="after")
     def _email_for_accounts(self) -> "_MemberConfig":
@@ -97,6 +98,7 @@ def parse_household(text: str) -> list[Member]:
             tuple(m.surname_forms),
             tuple(m.emails),
             m.display_name.strip(),
+            tuple(m.address_forms),
         )
         for m in config.members
     ]

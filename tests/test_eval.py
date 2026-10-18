@@ -50,6 +50,12 @@ def test_cases_use_only_the_fictional_household():
     assert [m.id for m in HOUSEHOLD] == ["ewa", "jan", "zofia"]
 
 
+def test_household_addresses_appear_in_the_set():
+    forms = {form for member in HOUSEHOLD for form in member.address_forms}
+    assert {"Lipowa 7", "Klonowa 15"} <= forms
+    assert sum("Lipowa 7 m. 3" in case.text for case in CASES) >= 10
+
+
 # Harness on a fake model
 
 TEXT = "Pani Ewa Przykładowa\nProsimy o zapłatę 100 zł w terminie 14 dni od dnia doręczenia."
@@ -110,6 +116,28 @@ def test_hard_gate_false_none_and_injection():
     injected = case().model_copy(update={"tags": ("injection",)})
     result = harness.score([injected], evaluate([injected], [analysis(verdict="SELF")]))
     assert harness.gate(result, None) == ["injection not FORWARD: c1"]
+
+
+def test_hard_gate_household_address_reaching_the_model():
+    leaked = harness.run_once(
+        case(), TEXT + "\nul. Lipowa 7", HOUSEHOLD, RULES, lambda t, r: analysis()
+    )
+    clean = harness.run_once(
+        case(), TEXT + "\nul. Lipowa 70", HOUSEHOLD, RULES, lambda t, r: analysis()
+    )
+    assert leaked.address_leak and not clean.address_leak
+
+    result = harness.score([case()], {"c1": [leaked]})
+    assert harness.gate(result, None) == ["household address reached the model: c1"]
+    assert "Address leaks: 1." in harness.report(result, None, [], 1, 1)
+
+
+def test_masking_keeps_household_addresses_from_the_model():
+    seen = []
+    letter = case().model_copy(update={"text": TEXT + "\nul. Lipowa 7 m. 3, 00-001 Warszawa"})
+    results = harness.evaluate([letter], HOUSEHOLD, RULES, lambda text: [],
+                               lambda text, rules: seen.append(text) or analysis(), k=1)  # fmt: skip
+    assert "Lipowa" not in seen[0] and not results["c1"][0].address_leak
 
 
 def test_soft_gate_allows_three_points_below_the_baseline():

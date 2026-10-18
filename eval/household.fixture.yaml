@@ -6,15 +6,18 @@ members:
     emails: [ewa@example.com]
     first_name_forms: [Ewa, Ewy, Ewie, Ewę, Ewą, Ewo]
     surname_forms: [Przykładowa, Przykładowej, Przykładową]
+    address_forms: [Lipowa 7, Lipowej 7, 00-001, 81-001]
 
   - id: jan
     role: koordynator
     emails: [jan@example.com]
     first_name_forms: [Jan, Jana, Janowi, Janem, Janie]
     surname_forms: [Przykładowy, Przykładowego, Przykładowemu, Przykładowym]
+    address_forms: [Lipowa 7, Lipowej 7, 00-001, 81-001]
 
   - id: zofia
     role: bez_konta
     display_name: Babcia Zosia
     first_name_forms: [Zofia, Zofii, Zofię, Zofią, Zofio]
     surname_forms: [Wzorcowa, Wzorcowej, Wzorcową]
+    address_forms: [Klonowa 15, Klonowej 15, 00-002]

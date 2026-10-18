@@ -22,6 +22,8 @@ class Member:
     emails: tuple[str, ...] = ()
     # How the app addresses them ("Babcia Ela"); the first first-name form if empty.
     display_name: str = ""
+    # Home address as letters write it ("Lipowa 7", "Lipowej 7", "00-001"); masked as [ADRES].
+    address_forms: tuple[str, ...] = ()
 
     @property
     def name(self) -> str:

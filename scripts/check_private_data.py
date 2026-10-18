@@ -3,7 +3,7 @@
 Fails when a staged file
   - is named household.yaml, or
   - contains a name form from the local household.yaml (whole word starting with a
-    capital letter, as masking matches it), an e-mail from it or a line from the
+    capital letter, as masking matches it), an e-mail or address form from it or a line from the
     local .forbidden-strings file (both any case)
     (surname, domain, street; one per line, # for comments).
 
@@ -42,6 +42,7 @@ def forbidden_terms(root: Path) -> tuple[list[str], list[str]]:
             if member.display_name:
                 names.append(member.display_name)
             other.extend(member.emails)
+            other.extend(member.address_forms)
     extra = root / ".forbidden-strings"
     if extra.exists():
         for line in extra.read_text(encoding="utf-8").splitlines():

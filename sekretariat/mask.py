@@ -34,6 +34,19 @@ PESEL: the built-in DLP detector only fires next to the word "PESEL" and on exac
 digits, so every 11-digit number (also split by spaces or dashes) is a custom
 finding. A valid checksum gives [PESEL], an invalid one [NUMER], so an OCR digit
 typo is still masked. A letter read in place of a digit (44O51401359) is not.
+
+Addresses: the built-in DLP detector misses the Polish flat notation ("ul. Lipowa 7
+m. 3") and a street inside a sentence, so streets with a prefix and a number and
+postal codes (with the city after them) are custom findings too. Each member's
+address forms ("Lipowa 7", "Lipowej 7") are found without DLP, in any case, also
+without a prefix ("Wspólnota Mieszkaniowa Lipowa 7"). All of them become [ADRES].
+The prefix stays, as with the built-in detector, and address groups separated only
+by commas or whitespace become one [ADRES]: the model reads "ul. [ADRES]" far more
+reliably than "[ADRES], [ADRES]" (eval: verdicts flipped on that alone).
+
+    raw:     "ul. Lipowa 7 m. 3, 00-001 Warszawa"
+                 └ street ───┘  └ postal code ──┘
+    masked:  "ul. [ADRES]"
 """
 
 import re
@@ -47,6 +60,32 @@ PERSON = "PERSON_NAME"
 ELEVEN_DIGITS = "ELEVEN_DIGIT_NUMBER"
 # RE2 (DLP) syntax: no lookarounds; \b keeps it off longer digit runs.
 ELEVEN_DIGITS_PATTERN = r"\b\d(?:[ -]?\d){10}\b"
+
+POLISH_STREET = "POLISH_STREET"
+POSTAL_CODE = "POSTAL_CODE"
+# RE2 (DLP) and Python: \w and \b are ASCII in RE2, so Polish letters are listed.
+_UPPER = "A-ZĄĆĘŁŃÓŚŹŻ"
+_LOWER = "a-ząćęłńóśźż"
+_STREET_PREFIX = (
+    r"(?i:\b(?:ul|al|os|pl)\.|\b(?:ulica|ulicy|aleja|alei|osiedle|osiedlu|plac|placu)\b)"
+)
+_STREET_WORD = rf"[0-9{_UPPER}][0-9{_UPPER}{_LOWER}.'-]*"
+_FLAT = r"(?:[ \t]*/[ \t]*\d+[A-Za-z]?|[ \t]*,?[ \t]*(?:m|lok|lokal|mieszk)\.?[ \t]*\d+[A-Za-z]?)?"
+# "ul. Lipowa 7 m. 3", "al. Jana Pawła II 15a lok. 2"; one line only. Group 1 is the
+# street without its prefix, the only part DLP reports.
+STREET_PATTERN = (
+    rf"{_STREET_PREFIX}[ \t]*({_STREET_WORD}(?:[ \t]+{_STREET_WORD}){{0,3}}?"
+    rf"[ \t]+\d+[A-Za-z]?{_FLAT})"
+)
+_CITY = rf"[{_UPPER}][{_LOWER}]+(?:-[{_UPPER}][{_LOWER}]+)?"
+# "00-001 Warszawa", "43-300 Bielsko-Biała"; the city only on the same line.
+POSTAL_CODE_PATTERN = rf"\b\d{{2}}-\d{{3}}\b(?:[ \t]+{_CITY}(?:[ \t]+{_CITY})?)?"
+
+_CUSTOM_REGEXES = {
+    ELEVEN_DIGITS: {"pattern": ELEVEN_DIGITS_PATTERN},
+    POLISH_STREET: {"pattern": STREET_PATTERN, "group_indexes": [1]},
+    POSTAL_CODE: {"pattern": POSTAL_CODE_PATTERN},
+}
 
 _LABELS = {
     "POLAND_PESEL_NUMBER": "PESEL",
@@ -113,12 +152,13 @@ def member_placeholder(index: int) -> str:
 def mask(raw_text: str, findings: list[Finding], members: list[Member]) -> MaskResult:
     spans = [_Span(f.start, f.end, _label(raw_text, f), None) for f in findings]
     spans += _member_spans(raw_text, members)
+    spans += address_spans(raw_text, members)
 
     other_people: dict[str, str] = {}
     parts: list[str] = []
     segments: list[Segment] = []
     raw_pos = masked_pos = 0
-    for group in _overlap_groups(spans):
+    for group in _join_addresses(raw_text, _overlap_groups(spans)):
         start, end = group[0].start, max(s.end for s in group)
         replacement = _replacement(raw_text[start:end], group, other_people)
 
@@ -143,10 +183,8 @@ def inspect(
             "inspect_config": {
                 "info_types": [{"name": name} for name in DLP_INFO_TYPES],
                 "custom_info_types": [
-                    {
-                        "info_type": {"name": ELEVEN_DIGITS},
-                        "regex": {"pattern": ELEVEN_DIGITS_PATTERN},
-                    }
+                    {"info_type": {"name": name}, "regex": regex}
+                    for name, regex in _CUSTOM_REGEXES.items()
                 ],
                 "min_likelihood": dlp_v2.Likelihood.POSSIBLE,
             },
@@ -177,6 +215,8 @@ def _label(raw_text: str, finding: Finding) -> str:
     if finding.info_type == ELEVEN_DIGITS:
         digits = re.sub(r"\D", "", raw_text[finding.start : finding.end])
         return "PESEL" if pesel_valid(digits) else "NUMER"
+    if finding.info_type in (POLISH_STREET, POSTAL_CODE):
+        return "ADRES"
     if finding.info_type == PERSON:
         return PERSON
     return _LABELS[finding.info_type]
@@ -221,6 +261,15 @@ def _member_spans(raw_text: str, members: list[Member]) -> list[_Span]:
     return spans
 
 
+def address_spans(raw_text: str, members: list[Member]) -> list[_Span]:
+    forms = sorted({f for m in members for f in m.address_forms}, key=len, reverse=True)
+    if not forms:
+        return []
+    alternatives = [r"\s+".join(re.escape(word) for word in f.split()) for f in forms]
+    pattern = re.compile(r"(?<!\w)(?:" + "|".join(alternatives) + r")(?!\w)", re.IGNORECASE)
+    return [_Span(m.start(), m.end(), "ADRES", None) for m in pattern.finditer(raw_text)]
+
+
 def _key(form: str) -> str:
     return " ".join(form.split()).casefold()
 
@@ -251,6 +300,23 @@ def _overlap_groups(spans: list[_Span]) -> list[list[_Span]]:
             groups.append([span])
             end = span.end
     return groups
+
+
+def _join_addresses(raw_text: str, groups: list[list[_Span]]) -> list[list[_Span]]:
+    joined: list[list[_Span]] = []
+    for group in groups:
+        if joined and _is_address(joined[-1]) and _is_address(group):
+            gap = raw_text[max(s.end for s in joined[-1]) : group[0].start]
+            if not gap.strip(" \t\r\n,"):
+                joined[-1] = joined[-1] + group
+                continue
+        joined.append(group)
+    return joined
+
+
+def _is_address(group: list[_Span]) -> bool:
+    labels = {s.label for s in group if s.label != PERSON}
+    return bool(labels) and min(labels, key=_PRIORITY.index) == "ADRES"
 
 
 def _replacement(surface: str, group: list[_Span], other_people: dict[str, str]) -> str:

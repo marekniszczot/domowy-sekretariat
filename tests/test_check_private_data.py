@@ -16,6 +16,7 @@ members:
     first_name_forms: [Jan, Jana]
     surname_forms: [Przykładowy]
     display_name: Dziadek Janek
+    address_forms: [Klonowa 15]
 """
 
 
@@ -48,6 +49,7 @@ def test_private_files_are_blocked(repo, name):
         "pani Przykładowa",
         "Przekaż: Dziadek Janek",
         "adres: ul. Testowa 7, Warszawa",
+        "mieszka przy KLONOWA 15",
     ],
 )
 def test_household_data_is_blocked_with_line_number(repo, text):
