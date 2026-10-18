@@ -16,7 +16,7 @@ Aplikacja na telefon, która ze zdjęcia pisma robi decyzję według domowego re
 Domownicy spisują regulamin zwykłym językiem, np. „Zaległości i wezwania do zapłaty od dostawców prądu, gazu i internetu. Zajmuje się tym Jan.”. Po zrobieniu zdjęcia pisma aplikacja pokazuje kartę w jednym z czterech stanów: **Nic nie musisz robić**, **Do zrobienia**, **Nie mam pewności** albo **Pilne**. Karta podaje czynność, termin, regułę, która zadziałała, i cytat z pisma. Regulamin tylko podpowiada, komu przekazać pismo. Przekazuje człowiek, jednym kliknięciem.
 
 ```mermaid
-flowchart LR
+flowchart TB
     A[Zdjęcie pisma<br>Document AI] --> B[Maskowanie<br>DLP + kod]
     B --> C[Gemini 2.5 Flash<br>+ regulamin]
     C --> D[Strażnik i terminy<br>w kodzie]
