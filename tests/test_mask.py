@@ -10,6 +10,10 @@ from sekretariat.mask import (
     ELEVEN_DIGITS,
     ELEVEN_DIGITS_PATTERN,
     PERSON,
+    POLISH_STREET,
+    POSTAL_CODE,
+    POSTAL_CODE_PATTERN,
+    STREET_PATTERN,
     Finding,
     inspect,
     mask,
@@ -197,6 +201,89 @@ def test_two_members_in_one_person_span():
     assert mask(text, findings, [JAN, EWA]).masked_text == "Państwo OSOBA_2, OSOBA_1"
 
 
+# Addresses: DLP STREET_ADDRESS misses "ul. Lipowa 7 m. 3" and addresses inside a sentence
+
+
+@pytest.mark.parametrize(
+    "text, address",
+    [
+        ("Pan Jan\nul. Lipowa 7 m. 3, 00-001 Warszawa", "Lipowa 7 m. 3"),
+        ("ul. Lipowa 7/3", "Lipowa 7/3"),
+        ("(garaż, ul. Lipowa 7) wynosi", "Lipowa 7"),
+        ("przy ul. Handlowej 5 już w sobotę", "Handlowej 5"),
+        ("Ul. Książkowa 3", "Książkowa 3"),
+        ("al. Jana Pawła II 15a lok. 2", "Jana Pawła II 15a lok. 2"),
+        ("ul. 3 Maja 12, Gdynia", "3 Maja 12"),
+        ("os. Słoneczne 4 m 10", "Słoneczne 4 m 10"),
+        ("ul. Zdrowa 1. Badania należy wykonać", "Zdrowa 1"),
+    ],
+)
+def test_street_pattern_reports_the_street_without_its_prefix(text, address):
+    # DLP reports only group 1 (group_indexes); "ul." stays, as with STREET_ADDRESS.
+    assert re.search(STREET_PATTERN, text).group(1) == address
+
+
+@pytest.mark.parametrize("text", ["ul. Lipowa", "Lipowa 7", "pl 15 zł", "Liczba os. 2"])
+def test_street_pattern_ignores(text):
+    assert not re.search(STREET_PATTERN, text)
+
+
+@pytest.mark.parametrize(
+    "text, code",
+    [
+        ("ul. Lipowa 7, 00-001 Warszawa", "00-001 Warszawa"),
+        ("81-001 Przykładowo\nDECYZJA", "81-001 Przykładowo"),
+        ("00-950 Warszawa\nWarszawa", "00-950 Warszawa"),
+        ("kod 43-300 Bielsko-Biała", "43-300 Bielsko-Biała"),
+        ("kod 00-001", "00-001"),
+    ],
+)
+def test_postal_code_pattern_matches(text, code):
+    assert re.search(POSTAL_CODE_PATTERN, text).group(0) == code
+
+
+@pytest.mark.parametrize("text", ["2026-10-18", "tel. 600-700-800", "100-001"])
+def test_postal_code_pattern_ignores(text):
+    assert not re.search(POSTAL_CODE_PATTERN, text)
+
+
+@pytest.mark.parametrize(
+    "text, expected",
+    [
+        ("ul. Lipowa 7 m. 3, 00-001 Warszawa\nDotyczy", "ul. [ADRES]\nDotyczy"),
+        ("ul. Lipowa 7 m. 3\n00-001 Warszawa", "ul. [ADRES]"),
+        ("ul. Lipowa 7 m. 3 oraz 00-001 Warszawa", "ul. [ADRES] oraz [ADRES]"),
+    ],
+)
+def test_custom_address_findings_one_address_one_placeholder(text, expected):
+    findings = [
+        find(text, "Lipowa 7 m. 3", POLISH_STREET),
+        find(text, "00-001 Warszawa", POSTAL_CODE),
+    ]
+    result = mask(text, findings, [])
+    assert result.masked_text == expected
+    assert result.to_raw(0, len(result.masked_text)) == (0, len(text))
+
+
+def test_address_next_to_another_label_is_not_joined():
+    text = "ul. Lipowa 7, tel. 600 700 800"
+    findings = [find(text, "Lipowa 7", POLISH_STREET), find(text, "600 700 800", "PHONE_NUMBER")]
+    assert mask(text, findings, []).masked_text == "ul. [ADRES], tel. [TELEFON]"
+
+
+def test_household_address_forms_without_dlp():
+    home = Member("jan", first_name_forms=("Jan",), address_forms=("Lipowa 7", "Lipowej 7"))
+    text = "Wspólnota Mieszkaniowa Lipowa 7, LIPOWA 7, przy Lipowej 7; Lipowa 70, Lipowej 9"
+    assert mask(text, [], [home]).masked_text == (
+        "Wspólnota Mieszkaniowa [ADRES], przy [ADRES]; Lipowa 70, Lipowej 9"
+    )
+
+
+def test_household_address_wins_over_member_name_inside_it():
+    home = Member("jan", first_name_forms=("Jana",), address_forms=("Jana Pawła II 5",))
+    assert mask("ul. Jana Pawła II 5", [], [home]).masked_text == "ul. [ADRES]"
+
+
 def test_member_name_inside_address_stays_address():
     text = "ul. Jana Pawła II 5"
     findings = [find(text, "Jana Pawła II 5", "STREET_ADDRESS")]
@@ -342,8 +429,12 @@ def test_inspect_builds_regional_request_and_maps_codepoints():
     assert request["parent"] == "projects/proj/locations/europe-central2"
     requested = {t["name"] for t in request["inspect_config"]["info_types"]}
     assert {"POLAND_PESEL_NUMBER", "PERSON_NAME", "EMAIL_ADDRESS"} <= requested
-    custom = request["inspect_config"]["custom_info_types"][0]
-    assert custom["info_type"]["name"] == ELEVEN_DIGITS
+    custom = {t["info_type"]["name"] for t in request["inspect_config"]["custom_info_types"]}
+    assert custom == {ELEVEN_DIGITS, POLISH_STREET, POSTAL_CODE}
+    [street] = [t for t in request["inspect_config"]["custom_info_types"]
+                if t["info_type"]["name"] == POLISH_STREET]  # fmt: skip
+    assert street["regex"]["group_indexes"] == [1]
+    assert not custom & requested  # built-in names only, DLP rejects unknown ones
 
 
 def test_inspect_refuses_truncated_findings():
@@ -373,12 +464,14 @@ def test_inspect_against_real_dlp():
     )
     text = (
         "Pan Jan Nowak, numer 440 514 013 59, sygnatura 12345678901, "
-        "tel. +48 600 700 800, e-mail jan.nowak@example.com. Kwota 245,00 zł."
+        "tel. +48 600 700 800, e-mail jan.nowak@example.com. Kwota 245,00 zł.\n"
+        "Adres: ul. Lipowa 7 m. 3, 81-001 Przykładowo (garaż przy ul. Lipowej 7)."
     )
 
     result = mask(text, inspect(client, project, "europe-central2", text), [JAN])
 
-    for secret in ["Nowak", "440 514 013 59", "12345678901", "600 700 800", "example.com"]:
+    for secret in ["Nowak", "440 514 013 59", "12345678901", "600 700 800", "example.com",
+                   "Lipowa", "Lipowej", "81-001", "Przykładowo"]:  # fmt: skip
         assert secret not in result.masked_text
     assert "245,00 zł" in result.masked_text
     assert "[PESEL]" in result.masked_text

@@ -49,6 +49,13 @@ def test_parse_keeps_order_and_fields():
     ]
 
 
+def test_address_forms_are_optional_per_member():
+    members = parse_household(
+        VALID.replace("id: jan\n", "id: jan\n    address_forms: [Lipowa 7, 00-001]\n")
+    )
+    assert [m.address_forms for m in members] == [(), ("Lipowa 7", "00-001"), ()]
+
+
 def test_display_name_defaults_to_the_first_first_name_form():
     members = parse_household(
         VALID.replace("id: zofia\n", "id: zofia\n    display_name: Babcia Zosia\n")
