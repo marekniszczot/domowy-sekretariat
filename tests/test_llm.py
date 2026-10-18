@@ -122,6 +122,13 @@ def test_prompt_asks_for_the_sender_role_not_the_industry():
     assert "PRACODAWCA" in SYSTEM_INSTRUCTION and "nie branżę firmy" in SYSTEM_INSTRUCTION
 
 
+def test_prompt_keeps_names_out_of_the_stamp_and_in_the_nominative():
+    from sekretariat.llm import SYSTEM_INSTRUCTION
+
+    assert "najwyżej 6 słów, bez znaczników" in SYSTEM_INSTRUCTION
+    assert "tylko w mianowniku" in SYSTEM_INSTRUCTION
+
+
 @pytest.fixture
 def gemini():
     import google.oauth2.credentials

@@ -146,7 +146,26 @@ def test_soft_gate_allows_three_points_below_the_baseline():
     assert harness.gate(result, baseline) == ["rule_id accuracy 86.0% < baseline 90.0% - 3%"]
 
 
+@pytest.mark.parametrize(
+    "fields, oblique, long",
+    [
+        ({"summary_plain_pl": "OSOBA_1 ma dług.", "required_action": "Zapłacić"}, False, False),
+        ({"summary_plain_pl": "Bank informuje OSOBA_1 o zmianie."}, True, False),
+        ({"summary_plain_pl": "Faktura dla OSOBA_1."}, True, False),
+        ({"summary_plain_pl": "Wyniki badań OSOBA_1 są gotowe."}, True, False),
+        ({"summary_plain_pl": "Bank pisze, że OSOBA_1 i OSOBA_2 mają dług."}, False, False),
+        ({"summary_plain_pl": "Pismo do OSOBY_1."}, True, False),
+        ({"required_action": "Przekazać pismo do OSOBA_2"}, True, True),
+        ({"required_action": "Opłacić zaległą fakturę za prąd do końca miesiąca"}, False, True),
+    ],
+)
+def test_card_text_is_reported(fields, oblique, long):
+    [run] = evaluate([case()], [analysis(**fields)])["c1"]
+    assert (run.oblique_name, run.long_action) == (oblique, long)
+
+
 def test_report_names_the_misses():
     result = harness.score([case()], evaluate([case()], [analysis(rule_id="R1")]))
     text = harness.report(result, None, harness.gate(result, None), 1, 1)
     assert text.startswith("## Eval: passed") and "| c1 | rule_id | R2 | R1 |" in text
+    assert "names in a wrong case in 0 of 1 runs" in text

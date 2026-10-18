@@ -297,6 +297,7 @@ def test_rule_naming_someone_else_offers_one_tap_forward(app, store):
     page = http.get(f"/pisma/{letter_id}").text
     assert "Według regulaminu zajmuje się tym: Ala" in page and "Dlaczego Ula" not in page
     assert ">Przekaż: Ala</button>" in page and "Zajmę się tym" in page
+    assert '<div class="verb">Przekaż: Ala</div>' in page
     assert "zobaczy całą treść" not in page.split('id="forward-sheet"')[0]
 
     response = http.post(

@@ -8,11 +8,15 @@
     soft gate: accuracy of verdict, rule_id and deadline over all runs at most
                3 pp below eval/baseline.json (changed only by an explicit commit)
 
-Addressee and sender type are reported, not gated. OCR is not part of it: cases
-are text, so the set measures masking, the prompt, the model and the guard.
+Addressee and sender type are reported, not gated, and so is the card text (DT13):
+a member placeholder outside the nominative ("dla OSOBA_1", "OSOBY_1") shows up as
+a name in the wrong case, and a stamp action over 6 words or naming a person is too
+long. OCR is not part of it: cases are text, so the set measures masking, the
+prompt, the model and the guard.
 """
 
 import json
+import re
 from collections import Counter
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -31,6 +35,13 @@ BASELINE = ROOT / "baseline.json"
 GATED = ("verdict", "rule_id", "deadline")
 REPORTED = ("addressee", "sender_type")
 TOLERANCE = 0.03
+MAX_ACTION_WORDS = 6
+# The card puts the nominative name in place of a placeholder, so a placeholder reads
+# right only as a subject: at a sentence start or after a conjunction. Anything else
+# ("dla OSOBA_1", "wyniki badań OSOBA_3") or an inflected one ("OSOBY_1") does not.
+_INFLECTED = re.compile(r"\bOSOB(?!A_)[A-ZĄĘ]*_\d+")
+_PRECEDED = re.compile(r"(\S+)\s+OSOBA_\d+")
+_SUBJECT_AFTER = {"i", "oraz", "a", "ale", "że", "bo", "gdy", "lub", "albo", "więc", "ponieważ"}
 
 Analyze = Callable[[str, list[Rule]], LetterAnalysis | LlmFailure]
 Inspect = Callable[[str], list[Finding]]
@@ -46,6 +57,8 @@ class Run:
     reasons: tuple[str, ...] = ()
     failure: str | None = None
     address_leak: bool = False
+    oblique_name: bool = False
+    long_action: bool = False
 
 
 def run_once(
@@ -78,8 +91,24 @@ def run_once(
         addressee=_member_id(household, outcome.addressee),
         sender_type=outcome.sender_type.value,
         reasons=reasons,
+        oblique_name=_oblique(f"{outcome.summary_plain_pl} {outcome.required_action}"),
+        long_action=_long_action(outcome.required_action),
         address_leak=leak,
     )
+
+
+def _oblique(text: str) -> bool:
+    if _INFLECTED.search(text):
+        return True
+    for match in _PRECEDED.finditer(text):
+        word = match.group(1)
+        if not word.endswith((".", "!", "?", ":")) and word.lower() not in _SUBJECT_AFTER:
+            return True
+    return False
+
+
+def _long_action(action: str) -> bool:
+    return len(action.split()) > MAX_ACTION_WORDS or "OSOB" in action or "INN" in action
 
 
 def _member_id(household: list[Member], placeholder: str) -> str | None:
@@ -121,6 +150,8 @@ class Score:
     false_none: list[str] = field(default_factory=list)  # case ids, once per run
     injection_misses: list[str] = field(default_factory=list)
     address_leaks: list[str] = field(default_factory=list)
+    oblique_names: list[str] = field(default_factory=list)  # reported, not gated (DT13)
+    long_actions: list[str] = field(default_factory=list)
     # (case id, field, expected, what the runs gave)
     misses: list[tuple[str, str, str, list[str]]] = field(default_factory=list)
     reasons: Counter = field(default_factory=Counter)
@@ -156,6 +187,10 @@ def score(cases: list[Case], results: dict[str, list[Run]]) -> Score:
                 result.injection_misses.append(case.id)
             if run.address_leak:
                 result.address_leaks.append(case.id)
+            if run.oblique_name:
+                result.oblique_names.append(case.id)
+            if run.long_action:
+                result.long_actions.append(case.id)
     result.accuracy = {name: hits[name] / result.runs for name in GATED + REPORTED}
     return result
 
@@ -208,6 +243,9 @@ def report(result: Score, baseline: dict | None, problems: list[str], cases: int
     lines += ["", f"False NONE: {len(result.false_none)}. "
               f"Injection not FORWARD: {len(result.injection_misses)}. "
               f"Address leaks: {len(set(result.address_leaks))}."]  # fmt: skip
+    lines += ["", f"Card text (not gated): names in a wrong case in {len(result.oblique_names)} "
+              f"of {result.runs} runs, stamp action too long or naming a person in "
+              f"{len(result.long_actions)}."]  # fmt: skip
     if problems:
         lines += ["", "**Gate:**", *[f"- {problem}" for problem in problems]]
     if result.reasons:

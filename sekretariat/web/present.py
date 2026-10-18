@@ -124,8 +124,13 @@ def unsure_reason(letter: dict) -> str | None:
     return None
 
 
-def verb(letter: dict, today: date) -> str:
-    """The stamp's main line. Placeholders are replaced later (with_names)."""
+def verb(letter: dict, today: date, forward_to: str | None = None) -> str:
+    """The stamp's main line. Placeholders are replaced later (with_names).
+
+    forward_to: the member a rule names when it is not the owner (DT13). The name
+    comes from the household, not from the model's sentence, so it is never in the
+    wrong case ("Przekaż: Jan", not "Przekazać pismo do Jan").
+    """
     if letter.get("status") == "unreadable":
         return "Zrób zdjęcie jeszcze raz"
     if letter.get("verdict") == "NONE":
@@ -133,6 +138,8 @@ def verb(letter: dict, today: date) -> str:
     if state(letter, today) == State.UNSURE or unsure_reason(letter):
         if "ESCALATION" not in _reasons(letter):
             return "Przekaż dalej"
+    if forward_to:
+        return f"Przekaż: {forward_to}"
     action = ((letter.get("analysis") or {}).get("required_action") or "").strip()
     return action.removesuffix(".") or "Zajmij się tym pismem"
 
