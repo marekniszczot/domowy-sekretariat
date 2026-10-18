@@ -1,6 +1,9 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+# Grammatical cases of the display name besides the nominative (DT13b).
+CASES = ("dopelniacz", "celownik", "biernik", "narzednik", "miejscownik", "wolacz")
+
 
 class Role(StrEnum):
     KOORDYNATOR = "koordynator"  # sees and configures everything
@@ -24,10 +27,15 @@ class Member:
     display_name: str = ""
     # Home address as letters write it ("Lipowa 7", "Lipowej 7", "00-001"); masked as [ADRES].
     address_forms: tuple[str, ...] = ()
+    # The display name in other cases (("dopelniacz", "Ewy"), ...); nominative if missing.
+    name_cases: tuple[tuple[str, str], ...] = ()
 
     @property
     def name(self) -> str:
         return self.display_name or (self.first_name_forms[0] if self.first_name_forms else self.id)
+
+    def name_in(self, case: str) -> str:
+        return dict(self.name_cases).get(case) or self.name
 
     @property
     def has_account(self) -> bool:

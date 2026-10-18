@@ -17,6 +17,7 @@ members:
     surname_forms: [Przykładowy]
     display_name: Dziadek Janek
     address_forms: [Klonowa 15]
+    name_cases: {celownik: Dziadkowi Jankowi}
 """
 
 
@@ -48,6 +49,7 @@ def test_private_files_are_blocked(repo, name):
         "kontakt: jan.przyklad@example.com",
         "pani Przykładowa",
         "Przekaż: Dziadek Janek",
+        "Pismo do Dziadkowi Jankowi",
         "adres: ul. Testowa 7, Warszawa",
         "mieszka przy KLONOWA 15",
     ],

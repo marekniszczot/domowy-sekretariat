@@ -41,6 +41,7 @@ def forbidden_terms(root: Path) -> tuple[list[str], list[str]]:
             names.extend(member.surname_forms)
             if member.display_name:
                 names.append(member.display_name)
+            names.extend(form for _, form in member.name_cases)
             other.extend(member.emails)
             other.extend(member.address_forms)
     extra = root / ".forbidden-strings"

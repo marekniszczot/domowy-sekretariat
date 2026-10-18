@@ -150,12 +150,12 @@ def test_soft_gate_allows_three_points_below_the_baseline():
     "fields, oblique, long",
     [
         ({"summary_plain_pl": "OSOBA_1 ma dług.", "required_action": "Zapłacić"}, False, False),
-        ({"summary_plain_pl": "Bank informuje OSOBA_1 o zmianie."}, True, False),
-        ({"summary_plain_pl": "Faktura dla OSOBA_1."}, True, False),
+        ({"summary_plain_pl": "Bank informuje OSOBA_1 o zmianie."}, False, False),
+        ({"summary_plain_pl": "Faktura dla OSOBA_1."}, False, False),
         ({"summary_plain_pl": "Wyniki badań OSOBA_1 są gotowe."}, True, False),
         ({"summary_plain_pl": "Bank pisze, że OSOBA_1 i OSOBA_2 mają dług."}, False, False),
-        ({"summary_plain_pl": "Pismo do OSOBY_1."}, True, False),
-        ({"required_action": "Przekazać pismo do OSOBA_2"}, True, True),
+        ({"summary_plain_pl": "Pismo do OSOBY_1."}, False, False),  # inflected: the card fits
+        ({"required_action": "Przekazać pismo do OSOBA_2"}, False, True),
         ({"required_action": "Opłacić zaległą fakturę za prąd do końca miesiąca"}, False, True),
     ],
 )

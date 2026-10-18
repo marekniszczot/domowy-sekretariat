@@ -7,6 +7,7 @@ members:
     first_name_forms: [Ewa, Ewy, Ewie, Ewę, Ewą, Ewo]
     surname_forms: [Przykładowa, Przykładowej, Przykładową]
     address_forms: [Lipowa 7, Lipowej 7, 00-001, 81-001]
+    name_cases: {dopelniacz: Ewy, celownik: Ewie, biernik: Ewę, narzednik: Ewą, miejscownik: Ewie, wolacz: Ewo}
 
   - id: jan
     role: koordynator
@@ -14,6 +15,7 @@ members:
     first_name_forms: [Jan, Jana, Janowi, Janem, Janie]
     surname_forms: [Przykładowy, Przykładowego, Przykładowemu, Przykładowym]
     address_forms: [Lipowa 7, Lipowej 7, 00-001, 81-001]
+    name_cases: {dopelniacz: Jana, celownik: Janowi, biernik: Jana, narzednik: Janem, miejscownik: Janie, wolacz: Janie}
 
   - id: zofia
     role: bez_konta
@@ -21,3 +23,4 @@ members:
     first_name_forms: [Zofia, Zofii, Zofię, Zofią, Zofio]
     surname_forms: [Wzorcowa, Wzorcowej, Wzorcową]
     address_forms: [Klonowa 15, Klonowej 15, 00-002]
+    name_cases: {dopelniacz: Babci Zosi, celownik: Babci Zosi, biernik: Babcię Zosię, narzednik: Babcią Zosią, miejscownik: Babci Zosi, wolacz: Babciu Zosiu}

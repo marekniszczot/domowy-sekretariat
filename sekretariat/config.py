@@ -9,14 +9,14 @@ See household.example.yaml for the format.
 
 import os
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import yaml
 from google.api_core import exceptions as gcp_exceptions
 from google.cloud import secretmanager
 from pydantic import BaseModel, Field, StringConstraints, ValidationError, model_validator
 
-from sekretariat.household import Member, Role
+from sekretariat.household import CASES, Member, Role
 
 
 class ConfigError(Exception):
@@ -24,6 +24,7 @@ class ConfigError(Exception):
 
 
 _Email = Annotated[str, StringConstraints(pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")]
+_Case = Literal[CASES]
 
 
 class _MemberConfig(BaseModel, extra="forbid"):
@@ -34,6 +35,7 @@ class _MemberConfig(BaseModel, extra="forbid"):
     surname_forms: list[str] = []
     display_name: str = ""
     address_forms: list[str] = []
+    name_cases: dict[_Case, str] = {}
 
     @model_validator(mode="after")
     def _email_for_accounts(self) -> "_MemberConfig":
@@ -99,6 +101,7 @@ def parse_household(text: str) -> list[Member]:
             tuple(m.emails),
             m.display_name.strip(),
             tuple(m.address_forms),
+            tuple((case, form.strip()) for case, form in m.name_cases.items()),
         )
         for m in config.members
     ]
